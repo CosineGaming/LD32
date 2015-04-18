@@ -16,16 +16,21 @@ var lastTime = 0;
 var quadrantSpeeds = [];
 
 var levels;
-var currentLevel = 0;
+var currentLevel = 1;
 
-var tileWidth = 32;
-var tileHeight = 16;
+var tileWidth = 64;
+var tileHeight = 32;
 
 var gravity = 0.3;
 var velocity = 0;
 var xVelocity = 0;
 
+var pulse = 0;
+var pulseDir = 1;
+
 var lastSpace = false;
+
+var bufferingAnimations = [];
 
 // Entry point
 
@@ -54,8 +59,11 @@ function initialize()
 
 	initializeWorld();
 
-	container.width = tileWidth * levels[0][0].length;
-	container.height = tileHeight * levels[0].length;
+	resizeWindow();
+
+	game.lineWidth = 4;
+	game.font = "20px white Candara";
+	game.fillStyle = "#000"
 
 	window.requestAnimationFrame(update);
 
@@ -73,14 +81,35 @@ function initializeWorld()
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
-			"- - - - - - - 1 - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
-			"- - - - 1 - - - - - - - 1 - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -"
+		],
+
+		[
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - 1 1 1 1 - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - t - - - - 1 - - -",
+			"- 1 1 1 - - - 1 - m - - - - 1 - - -",
+			"- - - - - - - 1 - m - - - - 1 - - -",
+			"- - - - - - - 1 - m - - - - - - - -",
+			"- - - - - - - 1 - m - 1 - - - - - -",
+			"- - - - - - - 1 - m - - - - - - - -",
+			"- - - - - - - 1 - m - - - - - - - -",
+			"- - - - - - - - - m - - - - - - - -",
+			"- - - - 1 - - - - b - - 1 - - - - -",
 			"- - - - 1 - - - - - - - - - - 1 - -",
 			"- - - - - - - - - - - 1 1 - - - - -",
 			"- 1 - - - - - - - - - 1 1 - - - - -",
@@ -106,15 +135,34 @@ function initializeWorld()
 		}
 	}
 
-	world["1"] = new Object();
-	loadImage(world["1"], "assets/test.png");
+	world["u"] = new Object();
+	loadImage(world["u"], "assets/themes/grass/grass.png");
+	world["b"] = new Object();
+	loadImage(world["b"], "assets/themes/grass/wall/base.png");
+	world["m"] = new Object();
+	loadImage(world["m"], "assets/themes/grass/wall/middle.png");
+	world["t"] = new Object();
+	loadImage(world["t"], "assets/themes/grass/wall/top.png");
+
+	world[""]
+
+	backgrounds = ["assets/themes/grass/bg.png", "", "assets/themes/desert/bg.png", ""];
+
+	/*world["v"] = new Object();
+	world["v"].x = 100;
+	world["v"].y = 100;
+	loadAnimation(world["v"], "assets/charactertest/", 3, 2, [0, 1, 2, 1, 0]);*/
 
 	world["player"] = new Object();
 	world["player"].x = 50;
-	world["player"].y = 50;
+	world["player"].y = 30;
 	world["player"].speed = 6;
 	world["player"].quadrant = [0, 0];
-	loadImage(world["player"], "assets/bob.png");
+	loadImage(world["player"], "assets/player.png");
+
+	/* Code better */
+	world["back"] = new Object();
+	loadImage(world["back"], "assets/backgrounds/0.png");
 
 	resetQuadrantSpeeds();
 
@@ -133,6 +181,11 @@ function render(updateTime)
 		return;
 	}
 
+	if (world["back"].image)
+	{
+		game.drawImage(world["back"].image, 0, 0, container.width, container.height);
+	}
+
 	for (var y=0; y<levels[currentLevel].length; y++)
 	{
 		for (var x=0; x<levels[currentLevel][y].length; x++)
@@ -143,7 +196,9 @@ function render(updateTime)
 			{
 				if (tile.image)
 				{
-					game.drawImage(tile.image, Math.round(x * tileWidth), Math.round(y * tileHeight));
+					game.drawImage(tile.image, Math.round(x * tileWidth), Math.round(y * tileHeight),
+						tileWidth,
+						tileHeight);
 				}
 			}
 		}
@@ -155,17 +210,49 @@ function render(updateTime)
 		{
 			game.drawImage(entity.image, Math.round(entity.x), Math.round(entity.y));
 		}
+		if (entity.animation)
+		{
+			var anime = entity.animation;
+			anime.countdown -= 1;
+			if (anime.countdown <= 0)
+			{
+				anime.countdown = anime.frameMultiplier;
+				anime.frame += 1;
+			}
+			if (anime.frame >= anime.frames.length)
+			{
+				anime.frame = 0;
+			}
+			//debugLog(anime.frames[anime.frame]);
+			//var frame = anime.images[anime.frames[anime.frame]];
+			//debugLog(frame.src);
+			//game.drawImage(frame, Math.round(entity.x), Math.round(entity.y));
+		}
 	});
+
+	game.strokeStyle = "rgba(0,0,0," + String(pulse) + ")";
+	var xDistance = container.width / (currentLevel + 1);
+	for (var x=1; x<currentLevel+1; x++)
+	{
+		game.beginPath();
+		game.moveTo(x * xDistance, 0);
+		game.lineTo(x * xDistance, container.height);
+		game.stroke();
+	}
+	var yDistance = container.height / (currentLevel + 1);
+	for (var y=1; y<currentLevel+1; y++)
+	{
+		game.beginPath();
+		game.moveTo(0, y * yDistance);
+		game.lineTo(container.width, y * yDistance);
+		game.stroke();
+	}
 
 	var displayFps = true;
 
 	if (displayFps)
 	{
-		game.font = "20px white Candara";
-		game.strokeStyle = "#FFF";
-		game.fillStyle = "#000"
 		game.fillText(String(Math.round(updateTime)), 20, 20);
-		game.strokeText(String(Math.round(updateTime)), 20, 20);
 	}
 
 }
@@ -209,12 +296,12 @@ function update(totalTime)
 		velocity += gravity * speedMod;
 		if (hangLeft || hangRight)
 		{
-			velocity = 0.75;
+			velocity = 0.75 * speedMod;
 		}
 		player.y += velocity * speedMod;
 
-		xVelocity *= 0.65;
-		player.x += xVelocity
+		xVelocity *= 0.65 * speedMod;
+		player.x += xVelocity * speedMod;
 
 		var goingRight = oldX < player.x;
 		var goingLeft = oldX > player.x;
@@ -241,9 +328,8 @@ function update(totalTime)
 
 		if ((hangLeft || hangRight) && key(" ") && !lastSpace)
 		{
-			velocity = jumpSpeed;
-			xVelocity = 10 * (hangRight * 2 - 1);
-			debugLog(xVelocity);
+			velocity = jumpSpeed * 1.5;
+			xVelocity = 4 * (hangRight * 2 - 1);
 			player.x += speed * (hangRight * 2 - 1);
 		}
 
@@ -267,6 +353,12 @@ function update(totalTime)
 		}
 	}
 
+	pulse += 0.02 * pulseDir;
+	if (pulse >= 1 || pulse <= 0)
+	{
+		pulseDir *= -1;
+	}
+
 	render(delta);
 
 	lastTime = totalTime;
@@ -287,6 +379,38 @@ function loadImage(addTo, url)
 
 }
 
+function loadAnimation(addTo, url, count, frameMultiplier=1, frames=false, suffix=".png")
+{
+	addTo.animation = new Object();
+	addTo.animation.images = [];
+	bufferingAnimations = [];
+	for (var frame=0; frame<count; frame++)
+	{
+		bufferingAnimations[frame] = new Image();
+		bufferingAnimations[frame].src = url + String(frame) + suffix;
+		//debugLog(bufferingAnimations[frame].src);
+		bufferingAnimations[frame].addEventListener("load", function() {
+			addTo.animation.images.push(bufferingAnimations[frame]);
+			//debugLog(bufferingAnimations[frame]);
+		});
+	}
+	addTo.animation.frameMultiplier = frameMultiplier;
+	if (frames)
+	{
+		addTo.animation.frames = frames;
+	}
+	else
+	{
+		addTo.animation.frames = []
+		for (var frame=0; frame<count; frame++)
+		{
+			addTo.animation.frames.push(frame);
+		}
+	}
+	addTo.animation.countdown = addTo.animation.frameMultiplier;
+	addTo.animation.frame = frames[0];
+}
+
 function everyEntity(what)
 {
 	for (var key in world)
@@ -296,6 +420,18 @@ function everyEntity(what)
 			what(world[key]);
 		}
 	}
+}
+
+function resizeWindow()
+{
+	container.width = window.innerWidth;
+	container.height = window.innerHeight;
+	tileWidth = Math.floor(container.width / levels[currentLevel][0].length) + 1;
+	tileHeight = Math.floor(container.height / levels[currentLevel].length) + 1;
+
+	game.imageSmoothingEnabled = false;
+	game.mozImageSmoothingEnabled = false;
+	game.webkitImageSmoothingEnabled = false;
 }
 
 function unsupported()
@@ -336,46 +472,26 @@ function tilePos(x, y)
 
 function getTile(tile)
 {
-	return levels[currentLevel][tile[1]][tile[0]]
+	if (tile[0] >= 0 && tile[0] < levels[currentLevel][0].length &&
+		tile[1] >= 0 && tile[1] < levels[currentLevel].length)
+	{
+		return levels[currentLevel][tile[1]][tile[0]];
+	}
+	else
+	{
+		return false;
+	}
 }
 
 function getQuadrant(x, y)
 {
-	return [Math.floor(x * quadrantSpeeds.length / container.width),
-		Math.floor(y * quadrantSpeeds.length / container.height)];
-}
-
-function fourCorners(object, x, y, testFunction)
-{
-	for (var plusWidth=0; plusWidth<2; plusWidth++)
-	{
-		for (var plusHeight=0; plusHeight<2; plusHeight++)
-		{
-			var testValue = testFunction(object, x + (object.image.width) * plusWidth,
-				y + (object.image.height) * plusHeight);
-			if (testValue)
-			{
-				return testValue;
-			}
-		}
-	}
-	return false;
+	return [Math.floor(x * (currentLevel + 1) / container.width),
+		Math.floor(y * (currentLevel + 1) / container.height)];
 }
 
 function changedQuadrant(object, x, y)
 {
-	return fourCorners(object, x, y, function(test, x, y){
-		var quadrant = getQuadrant(x, y);
-		if (quadrant == test.quadrant)
-		{
-			return false;
-		}
-		else
-		{
-			return quadrant;
-		}
-	});
-	/*for (var plusWidth=0; plusWidth<2; plusWidth++)
+	for (var plusWidth=0; plusWidth<2; plusWidth++)
 	{
 		for (var plusHeight=0; plusHeight<2; plusHeight++)
 		{
@@ -387,7 +503,7 @@ function changedQuadrant(object, x, y)
 			}
 		}
 	}
-	return false;*/
+	return false;
 }
 
 function quadrantSpeed(quadrant)
@@ -398,10 +514,10 @@ function quadrantSpeed(quadrant)
 function resetQuadrantSpeeds()
 {
 	quadrantSpeeds = [];
-	for (var x=0; x<currentLevel+2; ++x)
+	for (var x=0; x<currentLevel+1; ++x)
 	{
 		quadrantSpeeds.push([]);
-		for (var y=0; y<currentLevel+2; ++y)
+		for (var y=0; y<currentLevel+1; ++y)
 		{
 			quadrantSpeeds[x].push(1);
 		}
@@ -439,8 +555,8 @@ function collidesTile(object, x, y)
 function mouseDown(event)
 {
 
-	var x = container.width / window.innerWidth * event.clientX;
-	var y = container.height / window.innerHeight * event.clientY;
+	var x = event.clientX;
+	var y = event.clientY;
 	var quadrant = getQuadrant(x, y);
 
 	var speed = quadrantSpeed(quadrant);
@@ -457,6 +573,13 @@ function mouseDown(event)
 	{
 		quadrantSpeeds[quadrant[0]][quadrant[1]] = 0;
 	}
+
+	debugLog(quadrant[0]);
+	debugLog(", ");
+	debugLog(quadrant[1]);
+	debugLog(": ");
+	debugLog(quadrantSpeed(quadrant));
+	debugLog("<br />");
 
 }
 
