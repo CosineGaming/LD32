@@ -15,6 +15,12 @@ var keys = new Array(256);
 
 var lastTime = 0;
 
+var splits = 0;
+var quadrantSpeeds = [];
+
+var levels;
+var currentLevel = 0;
+
 // Entry point
 
 window.onload = initialize;
@@ -35,6 +41,11 @@ function initialize()
 	fillBrowser();
 	window.onresize = fillBrowser;
 
+	container.mozImageSmoothingEnabled = false;
+	container.webkitImageSmoothingEnabled = false;
+	container.msImageSmoothingEnabled = false;
+	container.imageSmoothingEnabled = false;
+
 	container.setAttribute("tabindex", "0");
 	container.focus();
 	container.addEventListener("mousedown", mouseDown);
@@ -51,6 +62,38 @@ function initialize()
 
 function initializeWorld()
 {
+
+	levels = [
+
+		[
+			"1 1 1 1 1 1 1 1 1 1 1 1 1 1",
+			"1 - - - - - - - - - - - - 1",
+			"1 - - - - - - - - - - - - 1",
+			"1 - - - - - - - - - - - - 1",
+			"1 - - - - - - - - - - - - 1",
+			"1 - - - - - - - - - - - - 1",
+			"1 1 1 1 1 1 1 1 1 1 1 1 1 1",
+		]
+
+	];
+
+	for (var level=0; level<levels.length; level++)
+	{
+		for (var y=0; y<levels[level].length; y++)
+		{
+			levels[level][y] = (levels[level][y]).split("");
+			for (var x=0; x<levels[level][y].length; x++)
+			{
+				if (levels[level][y][x] == " ")
+				{
+					levels[level][y].splice(x, 1);
+				}
+			}
+		}
+	}
+
+	world["1"] = new Object();
+	loadImage(world["1"], "assets/test.png");
 
 	window.requestAnimationFrame(update);
 
@@ -69,7 +112,28 @@ function render(updateTime)
 		return;
 	}
 
-	var entitiesByLayer = [];
+	for (var y=0; y<levels[currentLevel].length; y++)
+	{
+		for (var x=0; x<levels[currentLevel][y].length; x++)
+		{
+			var tileType = levels[currentLevel][y][x];
+			var tile = world[tileType];
+			if (tile)
+			{
+				if (tile.image)
+				{
+					game.drawImage(tile.image,
+						0, 0, 16, 16,
+						x * container.width / levels[currentLevel][y].length,
+						y * container.height / levels[currentLevel].length,
+						container.width / levels[currentLevel][y].length,
+						container.height / levels[currentLevel].length);
+				}
+			}
+		}
+	}
+
+	/*var entitiesByLayer = [];
 
 	// Order the entities by layer so we draw them correctly
 	everyEntity(
@@ -114,11 +178,15 @@ function render(updateTime)
 			}
 			game.drawImage(entity.image, x, y);
 		}
-	}
+	}*/
 
-	var display_fps = true;
+	everyEntity(function(){
+		// Code
+	});
 
-	if (display_fps)
+	var displayFps = true;
+
+	if (displayFps)
 	{
 		game.font = "20px white Candara";
 		game.strokeStyle = "#FFF";
@@ -197,6 +265,55 @@ function debugLog(log)
 function key(which)
 {
 	return keys[which.charCodeAt(0)]
+}
+
+function getQuadrant(x, y)
+{
+	return [int(x * (splits + 1) / container.width)]
+}
+
+function changedQuadrant(object)
+{
+	for (var plusWidth=0; plusWidth<2; plusWidth++)
+	{
+		for (var plusHeight=0; plusHeight<2; plusHeight++)
+		{
+			var cornerQuadrant = getQuadrant(object.x + object.image.width * plusWidth,
+				object.y + object.image.height * plusHeight);
+			if (cornerQuadrant != object.quadrant)
+			{
+				return cornerQuadrant;
+			}
+		}
+	}
+	return false;
+}
+
+function quadrantSpeed(quadrant)
+{
+	return quadrantSpeeds[quadrant[0]][quadrant[1]];
+}
+
+function resetQuadrantSpeeds()
+{
+	quadrantSpeeds = [];
+	for (var x=0; x<splits; ++x)
+	{
+		quadrantSpeeds.append([]);
+		for (var y=0; y<splits; ++y)
+		{
+			quadrantSpeeds[x].append(1);
+		}
+	}
+}
+
+function updateQuadrant(object)
+{
+	newQuadrant = changedQuadrant(object);
+	if (newQuadrant)
+	{
+		object.quadrant = newQuadrant;
+	}
 }
 
 // Input Handling
