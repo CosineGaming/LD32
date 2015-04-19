@@ -16,7 +16,8 @@ var lastTime = 0;
 var quadrantSpeeds = [];
 
 var levels;
-var currentLevel = 1;
+var currentLevel = 0;
+var levelData;
 
 var tileWidth = 64;
 var tileHeight = 32;
@@ -29,8 +30,6 @@ var pulse = 0;
 var pulseDir = 1;
 
 var lastSpace = false;
-
-var bufferingAnimations = [];
 
 // Entry point
 
@@ -82,15 +81,15 @@ function initializeWorld()
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - > - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
+			"- - - g - - g - - - - g - - g - - -",
+			"- - g - - - g - g g - g - - - g - -",
+			"- - - - - - - g - - g g - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
+			"g - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
@@ -120,6 +119,12 @@ function initializeWorld()
 
 	];
 
+	// Splits, spawnX, spawnY
+	levelData = [
+		[2, 50, 60],
+		[2, 50, 60]
+	];
+
 	for (var level=0; level<levels.length; level++)
 	{
 		for (var y=0; y<levels[level].length; y++)
@@ -135,34 +140,40 @@ function initializeWorld()
 		}
 	}
 
-	world["u"] = new Object();
-	loadImage(world["u"], "assets/themes/grass/grass.png");
+	world["g"] = new Object();
+	loadImage(world["g"], "assets/themes/grass/grass.png");
 	world["b"] = new Object();
 	loadImage(world["b"], "assets/themes/grass/wall/base.png");
 	world["m"] = new Object();
 	loadImage(world["m"], "assets/themes/grass/wall/middle.png");
 	world["t"] = new Object();
 	loadImage(world["t"], "assets/themes/grass/wall/top.png");
-
-	world[""]
+	world["l"] = new Object();
+	loadImage(world["l"], "assets/themes/grass/horizontal/left.png");
+	world["h"] = new Object();
+	loadImage(world["h"], "assets/themes/grass/horizontal/middle.png");
+	world["r"] = new Object();
+	loadImage(world["r"], "assets/themes/grass/horizontal/right.png");
+	world[">"] = new Object();
+	loadAnimation(world[">"], "assets/themes/grass/moving/", 5, 4);
 
 	backgrounds = ["assets/themes/grass/bg.png", "", "assets/themes/desert/bg.png", ""];
 
-	/*world["v"] = new Object();
-	world["v"].x = 100;
-	world["v"].y = 100;
-	loadAnimation(world["v"], "assets/charactertest/", 3, 2, [0, 1, 2, 1, 0]);*/
-
 	world["player"] = new Object();
-	world["player"].x = 50;
-	world["player"].y = 30;
-	world["player"].speed = 6;
-	world["player"].quadrant = [0, 0];
-	loadImage(world["player"], "assets/player.png");
-
-	/* Code better */
-	world["back"] = new Object();
-	loadImage(world["back"], "assets/backgrounds/0.png");
+	var player = world["player"];
+	player.x = levelData[0][1];
+	player.y = levelData[0][2];
+	player.speed = 6;
+	player.quadrant = [0, 0];
+	player.animations = new Object();
+	loadAnimation(player, "assets/player/right/", 3, 4);
+	player.animations["right"] = player.animation;
+	loadAnimation(player, "assets/player/left/", 3, 4);
+	player.animations["left"] = player.animation;
+	loadAnimation(player, "assets/player/whack/", 4, 4);
+	player.animations["whack"] = player.animation;
+	loadAnimation(player, "assets/player/rest/", 3, 6, [0,1,2,1,0]);
+	player.animations["rest"] = player.animation;
 
 	resetQuadrantSpeeds();
 
@@ -181,10 +192,10 @@ function render(updateTime)
 		return;
 	}
 
-	if (world["back"].image)
+	/*if (world["back"].image)
 	{
 		game.drawImage(world["back"].image, 0, 0, container.width, container.height);
-	}
+	}*/
 
 	for (var y=0; y<levels[currentLevel].length; y++)
 	{
@@ -194,11 +205,19 @@ function render(updateTime)
 			var tile = world[tileType];
 			if (tile)
 			{
-				if (tile.image)
+				var placeX = Math.round(x * tileWidth);
+				var placeY = Math.round(y * tileHeight);
+				if (tile.animation)
 				{
-					game.drawImage(tile.image, Math.round(x * tileWidth), Math.round(y * tileHeight),
-						tileWidth,
-						tileHeight);
+					var frame = getAnimationFrame(tile, placeX, placeY);
+					if (frame)
+					{
+						game.drawImage(frame, placeX, placeY, tileWidth, tileHeight);
+					}
+				}
+				else if (tile.image)
+				{
+					game.drawImage(tile.image, placeX, placeY, tileWidth, tileHeight);
 				}
 			}
 		}
@@ -206,41 +225,47 @@ function render(updateTime)
 
 	everyEntity(function(entity){
 		// Code
-		if (entity.image)
+		if (entity.x || entity.y)
 		{
-			game.drawImage(entity.image, Math.round(entity.x), Math.round(entity.y));
-		}
-		if (entity.animation)
-		{
-			var anime = entity.animation;
-			anime.countdown -= 1;
-			if (anime.countdown <= 0)
+			if (entity.animation)
 			{
-				anime.countdown = anime.frameMultiplier;
-				anime.frame += 1;
+				var frame = getAnimationFrame(entity);
+				if (frame)
+				{
+					game.drawImage(frame, Math.round(entity.x), Math.round(entity.y));
+				}
 			}
-			if (anime.frame >= anime.frames.length)
+			else if (entity.image.complete)
 			{
-				anime.frame = 0;
+				game.drawImage(entity.image, Math.round(entity.x), Math.round(entity.y));
 			}
-			//debugLog(anime.frames[anime.frame]);
-			//var frame = anime.images[anime.frames[anime.frame]];
-			//debugLog(frame.src);
-			//game.drawImage(frame, Math.round(entity.x), Math.round(entity.y));
 		}
 	});
 
+	for (var x=0; x<quadrantSpeeds.length; x++)
+	{
+		for (var y=0; y<quadrantSpeeds[x].length; y++)
+		{
+			game.beginPath();
+			game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
+			var sectWidth = container.width / levelData[currentLevel][0];
+			var sectHeight = container.height / levelData[currentLevel][0];
+			game.rect(x * sectWidth, y * sectHeight, sectWidth, sectHeight);
+			game.fill();
+		}
+	}
+
 	game.strokeStyle = "rgba(0,0,0," + String(pulse) + ")";
-	var xDistance = container.width / (currentLevel + 1);
-	for (var x=1; x<currentLevel+1; x++)
+	var xDistance = container.width / levelData[currentLevel][0];
+	for (var x=1; x<levelData[currentLevel][0]; x++)
 	{
 		game.beginPath();
 		game.moveTo(x * xDistance, 0);
 		game.lineTo(x * xDistance, container.height);
 		game.stroke();
 	}
-	var yDistance = container.height / (currentLevel + 1);
-	for (var y=1; y<currentLevel+1; y++)
+	var yDistance = container.height / levelData[currentLevel][0];
+	for (var y=1; y<levelData[currentLevel][0]; y++)
 	{
 		game.beginPath();
 		game.moveTo(0, y * yDistance);
@@ -271,86 +296,103 @@ function update(totalTime)
 	{
 
 		var speedMod = quadrantSpeed(getQuadrant(player.x, player.y));
-		var speed = player.speed * speedMod;
 
-		var oldX = player.x;
-		var oldY = player.y;
-
-		var hangLeft = collidesTile(player, player.x + 1, player.y - 1);
-		var hangRight = collidesTile(player, player.x - 1, player.y - 1);
-
-		if (key("A") && !hangLeft)
-		{
-			player.x -= speed;
-		}
-		if (key("DE") && !hangRight)
-		{
-			player.x += speed;
-		}
-		var jumpSpeed = -5;
-		if (key(" W") && collidesTile(player, player.x, player.y) && !lastSpace)
-		{
-			velocity = jumpSpeed;
-		}
-
-		velocity += gravity * speedMod;
-		if (hangLeft || hangRight)
-		{
-			velocity = 0.75 * speedMod;
-		}
-		player.y += velocity * speedMod;
-
-		xVelocity *= 0.65 * speedMod;
-		player.x += xVelocity * speedMod;
-
-		var goingRight = oldX < player.x;
-		var goingLeft = oldX > player.x;
-		var byX = collidesTile(player, player.x, oldY - 1);
-		var byY = collidesTile(player, oldX, player.y);
-		var goingDown = oldY < player.y;
-
-		if (collidesTile(player, player.x, player.y))
+		if (speedMod != 0)
 		{
 
-			if (byY)
+			var speed = player.speed * speedMod;
+
+			var oldX = player.x;
+			var oldY = player.y;
+
+			var hangLeft = collidesTile(player, player.x + 1, player.y - 1);
+			var hangRight = collidesTile(player, player.x - 1, player.y - 1);
+
+			if (key("A") && !hangLeft)
 			{
-				velocity = 0;
-				player.y = Math.floor((player.y + player.image.height * goingDown) / tileHeight)
-					* tileHeight - player.image.height * goingDown + tileHeight * !goingDown;
+				player.x -= speed;
+				player.animation = player.animations["left"];
 			}
-			if (byX)
+			else if (key("D") && !hangRight)
 			{
-				player.x = Math.floor((player.x + player.image.width * goingRight) / tileWidth)
-					* tileWidth - player.image.width * goingRight + tileWidth * goingLeft;
+				player.x += speed;
+				player.animation = player.animations["right"];
+			}
+			else
+			{
+				player.animation = player.animations["rest"];
+			}
+			var jumpSpeed = -5;
+			if ((key(" W") || keys[0]) && collidesTile(player, player.x, player.y) && !lastSpace)
+			{
+				velocity = jumpSpeed;
+			}
+			if (key("E"))
+			{
+				player.animation = player.animations["whack"];
 			}
 
+			velocity += gravity * speedMod;
+			if (hangLeft || hangRight)
+			{
+				velocity = 0.75 * speedMod;
+			}
+			player.y += velocity * speedMod;
+
+			xVelocity *= 0.65 * speedMod;
+			player.x += xVelocity * speedMod;
+
+			var goingRight = oldX < player.x;
+			var goingLeft = oldX > player.x;
+			var byX = collidesTile(player, player.x, oldY - 1);
+			var byY = collidesTile(player, oldX, player.y);
+			var goingDown = oldY < player.y;
+
+			if (collidesTile(player, player.x, player.y))
+			{
+
+				if (byY)
+				{
+					velocity = 0;
+					player.y = Math.floor((player.y + player.image.height * goingDown) / tileHeight)
+						* tileHeight - player.image.height * goingDown + tileHeight * !goingDown;
+				}
+				if (byX)
+				{
+					player.x = Math.floor((player.x + player.image.width * goingRight) / tileWidth)
+						* tileWidth - player.image.width * goingRight + tileWidth * goingLeft;
+				}
+
+			}
+
+			if ((hangLeft || hangRight) && key(" ") && !lastSpace)
+			{
+				velocity = jumpSpeed * 1.5;
+				xVelocity = 4 * (hangRight * 2 - 1);
+				player.x += speed * (hangRight * 2 - 1);
+			}
+
+			lastSpace = key(" W");
+
+			if (player.x < 0)
+			{
+				player.x = 0;
+			}
+			if (player.x > container.width - player.image.width)
+			{
+				player.x = container.width - player.image.width;
+			}
+			if (player.y < 0)
+			{
+				player.y = 0;
+			}
+			if (player.y > container.height - player.image.height)
+			{
+				// Die.
+			}
+
 		}
 
-		if ((hangLeft || hangRight) && key(" ") && !lastSpace)
-		{
-			velocity = jumpSpeed * 1.5;
-			xVelocity = 4 * (hangRight * 2 - 1);
-			player.x += speed * (hangRight * 2 - 1);
-		}
-
-		lastSpace = key(" W");
-
-		if (player.x < 0)
-		{
-			player.x = 0;
-		}
-		if (player.x > container.width - player.image.width)
-		{
-			player.x = container.width - player.image.width;
-		}
-		if (player.y < 0)
-		{
-			player.y = 0;
-		}
-		if (player.y > container.height - player.image.height)
-		{
-			// Die.
-		}
 	}
 
 	pulse += 0.02 * pulseDir;
@@ -370,12 +412,11 @@ function update(totalTime)
 function loadImage(addTo, url)
 {
 
-	var image = new Image();
-	image.src = url;
-
+	var image = document.createElement("img");
 	image.addEventListener("load", function() {
 		addTo.image = image;
 	});
+	image.src = url;
 
 }
 
@@ -383,16 +424,19 @@ function loadAnimation(addTo, url, count, frameMultiplier=1, frames=false, suffi
 {
 	addTo.animation = new Object();
 	addTo.animation.images = [];
-	bufferingAnimations = [];
 	for (var frame=0; frame<count; frame++)
 	{
-		bufferingAnimations[frame] = new Image();
-		bufferingAnimations[frame].src = url + String(frame) + suffix;
-		//debugLog(bufferingAnimations[frame].src);
-		bufferingAnimations[frame].addEventListener("load", function() {
-			addTo.animation.images.push(bufferingAnimations[frame]);
-			//debugLog(bufferingAnimations[frame]);
-		});
+		var image = new Image();
+		if (frame == 0)
+		{
+			image.addEventListener("load", function() {
+				addTo.image = new Object();
+				addTo.image.width = image.width;
+				addTo.image.height = image.height;
+			});
+		}
+		image.src = url + String(frame) + suffix;
+		addTo.animation.images.push(image);
 	}
 	addTo.animation.frameMultiplier = frameMultiplier;
 	if (frames)
@@ -401,14 +445,54 @@ function loadAnimation(addTo, url, count, frameMultiplier=1, frames=false, suffi
 	}
 	else
 	{
-		addTo.animation.frames = []
+		addTo.animation.frames = [];
 		for (var frame=0; frame<count; frame++)
 		{
 			addTo.animation.frames.push(frame);
 		}
 	}
 	addTo.animation.countdown = addTo.animation.frameMultiplier;
-	addTo.animation.frame = frames[0];
+	addTo.animation.frame = addTo.animation.frames[0];
+}
+
+function getAnimationFrame(entity, x=0, y=0)
+{
+	var eX;
+	var eY;
+	if (entity.x && entity.y)
+	{
+		eX = entity.x;
+		eY = entity.y;
+	}
+	else
+	{
+		eX = x;
+		eY = y;
+	}
+	if (!entity.animation)
+	{
+		return false;
+	}
+	var anime = entity.animation;
+	anime.countdown -= 1 * quadrantSpeed(getQuadrant(eX, eY));
+	if (anime.countdown <= 0)
+	{
+		anime.countdown = anime.frameMultiplier;
+		anime.frame += 1;
+	}
+	if (anime.frame >= anime.frames.length)
+	{
+		anime.frame = 0;
+	}
+	var frame = anime.images[anime.frames[anime.frame]];
+	if (frame)
+	{
+		if (frame.complete)
+		{
+			return frame;
+		}
+	}
+	return false;
 }
 
 function everyEntity(what)
@@ -485,8 +569,8 @@ function getTile(tile)
 
 function getQuadrant(x, y)
 {
-	return [Math.floor(x * (currentLevel + 1) / container.width),
-		Math.floor(y * (currentLevel + 1) / container.height)];
+	return [Math.floor(x * levelData[currentLevel][0] / container.width),
+		Math.floor(y * levelData[currentLevel][0] / container.height)];
 }
 
 function changedQuadrant(object, x, y)
@@ -514,10 +598,10 @@ function quadrantSpeed(quadrant)
 function resetQuadrantSpeeds()
 {
 	quadrantSpeeds = [];
-	for (var x=0; x<currentLevel+1; ++x)
+	for (var x=0; x<levelData[currentLevel][0]; ++x)
 	{
 		quadrantSpeeds.push([]);
-		for (var y=0; y<currentLevel+1; ++y)
+		for (var y=0; y<levelData[currentLevel][0]; ++y)
 		{
 			quadrantSpeeds[x].push(1);
 		}
@@ -573,13 +657,6 @@ function mouseDown(event)
 	{
 		quadrantSpeeds[quadrant[0]][quadrant[1]] = 0;
 	}
-
-	debugLog(quadrant[0]);
-	debugLog(", ");
-	debugLog(quadrant[1]);
-	debugLog(": ");
-	debugLog(quadrantSpeed(quadrant));
-	debugLog("<br />");
 
 }
 
