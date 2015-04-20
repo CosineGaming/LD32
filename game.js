@@ -6,7 +6,6 @@
 var container;
 var game;
 
-var world = {};
 var sounds = {};
 
 var keys = new Array(256);
@@ -16,8 +15,8 @@ var lastTime = 0;
 var quadrantSpeeds = [];
 
 var levels;
-var currentLevel = 0;
-var levelData;
+var level = 0;
+var levelWorlds = [];
 
 var tileWidth = 64;
 var tileHeight = 32;
@@ -78,100 +77,83 @@ function initializeWorld()
 
 	levels = [
 
-		[
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - g - - g - - - - g - - g - - -",
-			"- - g - - - g - g g - g - - - g - -",
-			"- - - - - - - g - - g - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - i - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - - - - - - - - - -"
-		],
-
-		[
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - 1 1 1 1 - - - - -",
-			"- - - - - - - - - - - - - - - - - -",
-			"- - - - - - - - - t - - - - 1 - - -",
-			"- 1 1 1 - - - 1 - m - - - - 1 - - -",
-			"- - - - - - - 1 - m - - - - 1 - - -",
-			"- - - - - - - 1 - m - - - - - - - -",
-			"- - - - - - - 1 - m - 1 - - - - - -",
-			"- - - - - - - 1 - m - - - - - - - -",
-			"- - - - - - - 1 - m - - - - - - - -",
-			"- - - - - - - - - m - - - - - - - -",
-			"- - - - 1 - - - - b - - 1 - - - - -",
-			"- - - - 1 - - - - - - - - - - 1 - -",
-			"- - - - - - - - - - - 1 1 - - - - -",
-			"- 1 - - - - - - - - - 1 1 - - - - -",
-			"- - - - - - - - - - - - - - - 1 - -",
-			"- - - - - - - - - - - - - - - 1 - -",
-			"- - 1 1 1 - - 1 1 - 1 - 1 - - 1 - -"
-		]
-
-	];
-
-	// Splits, spawnX, spawnY
-	levelData = [
-		[2, 8, -1],
-		[2, 0.001, 0.001]
-	];
-
-	for (var level=0; level<levels.length; level++)
-	{
-		for (var y=0; y<levels[level].length; y++)
 		{
-			levels[level][y] = (levels[level][y]).split("");
-			for (var x=0; x<levels[level][y].length; x++)
+			tiles : [
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - g - - g - - - - g - - g - - -",
+				"- - g - - - g - g g - g - - - g - -",
+				"- - - - - - - g - - g - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - i - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - g - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -"
+			],
+			entities : new Object(),
+			splits : 2
+		}
+
+	];
+
+	for (var i=0; i<levels.length; i++)
+	{
+		for (var y=0; y<levels[i].tiles.length; y++)
+		{
+			levels[i].tiles[y] = (levels[i].tiles[y]).split("");
+			for (var x=0; x<levels[i].tiles[y].length; x++)
 			{
-				if (levels[level][y][x] == " ")
+				if (levels[i].tiles[y][x] == " ")
 				{
-					levels[level][y].splice(x, 1);
+					levels[i].tiles[y].splice(x, 1);
 				}
 			}
 		}
 	}
 
 	// Level 1 tiles and moving tile placement
-	world["bg"] = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight)
 
-	world["g"] = new Entity("assets/themes/grass/grass.png");
+	levels[0].background = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight);
 
-	world["b"] = new Entity("assets/themes/grass/wall/base.png");
-	world["m"] = new Entity("assets/themes/grass/wall/middle.png");
-	world["t"] = new Entity("assets/themes/grass/wall/top.png");
+	var add = levels[0].entities;
 
-	world["l"] = new Entity("assets/themes/grass/horizontal/left.png");
-	world["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
-	world["r"] = new Entity("assets/themes/grass/horizontal/right.png");
+	add["g"] = new Entity("assets/themes/grass/grass.png");
 
-	world["gm"] = new Entity(undefined, 0, 13, 1, 1, "tile", "grass", 0.05);
-	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3);
+	add["b"] = new Entity("assets/themes/grass/wall/base.png");
+	add["m"] = new Entity("assets/themes/grass/wall/middle.png");
+	add["t"] = new Entity("assets/themes/grass/wall/top.png");
 
-	world["gm2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
-	world["gm2"].animation = world["gm"].animation;
-	/*world["gm2"] = world["gm"];
-	world["gm2"].x = 15;
-	world["gm2"].y = 9;
-	world["gm2"].xVelocity = 0;
-	world["gm2"].yVelocity = 0.25;*/
+	// levelWorlds[0]["l"] = new Entity("assets/themes/grass/horizontal/left.png");
+	// levelWorlds[0]["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
+	// levelWorlds[0]["r"] = new Entity("assets/themes/grass/horizontal/right.png");
 
-	world["bear"] = new Entity(undefined, 4, 7, 1, 2);
-	world["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
+	add["1"] = new Entity(undefined, 0, 13, 1, 1, "tile", "grass", 0.05);
+	add["1"].loadAnimation("assets/themes/grass/moving/", 5, 3);
+	add["2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
+	add["2"].animation = add["1"].animation;
+	// add["3"] = new Entity(undefined, 1, 8, 1, 1, "tile", "grass", 0.05);
+	// add["3"].animation = add["1"].animation;
+	// add["4"] = new Entity(undefined, 0, 9, 1, 1, "tile", "grass", 0.05);
+	// add["4"].animation = add["1"].animation;
+	/*levels[level].entities["gm2"] = levels[level].entities["gm"];
+	levels[level].entities["gm2"].x = 15;
+	levels[level].entities["gm2"].y = 9;
+	levels[level].entities["gm2"].xVelocity = 0;
+	levels[level].entities["gm2"].yVelocity = 0.25;*/
+	//
+	// levelWorlds[0]["bear"] = new Entity(undefined, 4, 7, 1, 2);
+	// levelWorlds[0]["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
 
-	var player = new Entity(undefined, levelData[0][1], levelData[0][2], 0.844, 1.688, "player");
-	world["player"] = player;
+	var player = new Entity(undefined, 8, 0, 0.844, 1.688, "player");
+	levels[level].entities["player"] = player;
 	player.animations = new Object();
 	player.loadAnimation("assets/player/right/", 3, 4);
 	player.animations["right"] = player.animation;
@@ -198,6 +180,8 @@ function render(updateTime)
 		// We can't render if we don't have a game.
 		return;
 	}
+
+	levels[level].background.render()
 
 	everyEntity(function(entity){entity.render();});
 
@@ -271,7 +255,7 @@ function update(totalTime)
 
 	});
 
-	var player = world["player"];
+	var player = levels[level].entities["player"];
 
 	var speedMod = quadrantSpeed(player.getQuadrant());
 
@@ -361,25 +345,25 @@ function renderQuadrants()
 			game.beginPath();
 			//game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
 			var shade = String(Math.floor(quadrantSpeed([x, y]) * 128));
-			game.fillStyle = "rgba(" + shade + "," + shade + "," + shade + ",0.8)";
-			var sectWidth = container.width / levelData[currentLevel][0];
-			var sectHeight = container.height / levelData[currentLevel][0];
+			game.fillStyle = "rgba(" + shade + "," + shade + "," + shade + ",0.6)";
+			var sectWidth = container.width / levels[level].splits;
+			var sectHeight = container.height / levels[level].splits;
 			game.rect(x * sectWidth, y * sectHeight, sectWidth, sectHeight);
 			game.fill();
 		}
 	}
 
 	game.strokeStyle = "rgba(0,0,0," + String(pulse) + ")";
-	var xDistance = container.width / levelData[currentLevel][0];
-	for (var x=1; x<levelData[currentLevel][0]; x++)
+	var xDistance = container.width / levels[level].splits;
+	for (var x=1; x<levels[level].splits; x++)
 	{
 		game.beginPath();
 		game.moveTo(x * xDistance, 0);
 		game.lineTo(x * xDistance, container.height);
 		game.stroke();
 	}
-	var yDistance = container.height / levelData[currentLevel][0];
-	for (var y=1; y<levelData[currentLevel][0]; y++)
+	var yDistance = container.height / levels[level].splits;
+	for (var y=1; y<levels[level].splits; y++)
 	{
 		game.beginPath();
 		game.moveTo(0, y * yDistance);
@@ -392,8 +376,8 @@ function renderQuadrants()
 function renderTile(x, y)
 {
 
-	var tileType = levels[currentLevel][y][x];
-	var tile = world[tileType];
+	var tileType = getTile([x, y]);
+	var tile = levels[level].entities[tileType];
 
 	if (tile)
 	{
@@ -683,11 +667,11 @@ var Entity = (function()
 
 	Entity.prototype.collidesWorld = function(x, y)
 	{
-		for (var key in world)
+		for (var key in levels[level].entities)
 		{
-			if (world.hasOwnProperty(key))
+			if (levels[level].entities.hasOwnProperty(key))
 			{
-				other = world[key];
+				other = levels[level].entities[key];
 				if (other != this)
 				{
 					if (this.collidesOther(other, x, y))
@@ -796,11 +780,11 @@ var Entity = (function()
 
 function everyEntity(what)
 {
-	for (var key in world)
+	for (var key in levels[level].entities)
 	{
-		if (world.hasOwnProperty(key))
+		if (levels[level].entities.hasOwnProperty(key))
 		{
-			what(world[key]);
+			what(levels[level].entities[key]);
 		}
 	}
 }
@@ -871,7 +855,7 @@ function getTile(tile)
 	if (tile[0] >= 0 && tile[0] < levelWidth &&
 		tile[1] >= 0 && tile[1] < levelHeight)
 	{
-		return levels[currentLevel][tile[1]][tile[0]];
+		return levels[level].tiles[tile[1]][tile[0]];
 	}
 	else
 	{
@@ -881,14 +865,14 @@ function getTile(tile)
 
 function getQuadrant(x, y)
 {
-	return [Math.floor(x * levelData[currentLevel][0] / levelWidth),
-		Math.floor(y * levelData[currentLevel][0] / levelHeight)];
+	return [Math.floor(x * levels[level].splits / levelWidth),
+		Math.floor(y * levels[level].splits / levelHeight)];
 }
 
 function quadrantSpeed(quadrant)
 {
-	if (quadrant[0] >= 0 && quadrant[0] < levelData[currentLevel][0]
-		&& quadrant[1] >= 0 && quadrant[1] < levelData[currentLevel][0])
+	if (quadrant[0] >= 0 && quadrant[0] < levels[level].splits
+		&& quadrant[1] >= 0 && quadrant[1] < levels[level].splits)
 	{
 		return quadrantSpeeds[quadrant[0]][quadrant[1]];
 	}
@@ -901,10 +885,10 @@ function quadrantSpeed(quadrant)
 function resetQuadrantSpeeds()
 {
 	quadrantSpeeds = [];
-	for (var x=0; x<levelData[currentLevel][0]; ++x)
+	for (var x=0; x<levels[level].splits; ++x)
 	{
 		quadrantSpeeds.push([]);
-		for (var y=0; y<levelData[currentLevel][0]; ++y)
+		for (var y=0; y<levels[level].splits; ++y)
 		{
 			quadrantSpeeds[x].push(1);
 		}
