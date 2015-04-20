@@ -88,7 +88,32 @@ function initializeWorld()
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - g - - g - - - - g - - g - - -",
-				"- - g - - - g - g g - g - - - g - -",
+				"- - g - - i g - g g - g - - - g - -",
+				"- - - - - - - g - - g - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - i - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - g - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -"
+			],
+			entities : new Object(),
+			splits : 2
+		},
+
+		{
+			tiles : [
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - - - - - - - - - -",
+				"- - - g - - g - - - - g - - g - - -",
+				"- - g - - i g - g g - g - - - g - -",
 				"- - - - - - - g - - g - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - i - - - - - - - -",
@@ -114,6 +139,10 @@ function initializeWorld()
 				if (levels[i].tiles[y][x] == " ")
 				{
 					levels[i].tiles[y].splice(x, 1);
+					if (Math.floor(Math.random() * 10) == 0)
+						levels[i].tiles[y][x] = "g"
+					else
+						levels[i].tiles[y][x] = "-"
 				}
 			}
 		}
@@ -131,18 +160,18 @@ function initializeWorld()
 	add["m"] = new Entity("assets/themes/grass/wall/middle.png");
 	add["t"] = new Entity("assets/themes/grass/wall/top.png");
 
-	// levelWorlds[0]["l"] = new Entity("assets/themes/grass/horizontal/left.png");
-	// levelWorlds[0]["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
-	// levelWorlds[0]["r"] = new Entity("assets/themes/grass/horizontal/right.png");
+	add["l"] = new Entity("assets/themes/grass/horizontal/left.png");
+	add["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
+	add["r"] = new Entity("assets/themes/grass/horizontal/right.png");
 
 	add["1"] = new Entity(undefined, 0, 13, 1, 1, "tile", "grass", 0.05);
 	add["1"].loadAnimation("assets/themes/grass/moving/", 5, 3);
 	add["2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
 	add["2"].animation = add["1"].animation;
-	// add["3"] = new Entity(undefined, 1, 8, 1, 1, "tile", "grass", 0.05);
-	// add["3"].animation = add["1"].animation;
-	// add["4"] = new Entity(undefined, 0, 9, 1, 1, "tile", "grass", 0.05);
-	// add["4"].animation = add["1"].animation;
+	add["3"] = new Entity(undefined, 1, 8, 1, 1, "tile", "grass", 0.05);
+	add["3"].animation = add["1"].animation;
+	add["4"] = new Entity(undefined, 0, 9, 1, 1, "tile", "grass", 0.05);
+	add["4"].animation = add["1"].animation;
 	/*levels[level].entities["gm2"] = levels[level].entities["gm"];
 	levels[level].entities["gm2"].x = 15;
 	levels[level].entities["gm2"].y = 9;
@@ -267,8 +296,8 @@ function update(totalTime)
 		var oldX = player.x;
 		var oldY = player.y;
 
-		var hangLeft = player.collidesTile(player.x + 0.05, player.y - 0.001) ? 1 : 0;
-		var hangRight = player.collidesTile(player.x - 0.05, player.y - 0.001) ? 1 : 0;
+		var hangLeft = player.collidesTile(player.x + 0.001, player.y - 0.001) ? 1 : 0;
+		var hangRight = player.collidesTile(player.x - 0.001, player.y - 0.001) ? 1 : 0;
 
 		if (key("A") && !hangLeft)
 		{
@@ -297,7 +326,7 @@ function update(totalTime)
 		var jumpSpeed = -0.3;
 		if (hangLeft || hangRight)
 		{
-			player.yVelocity = 0.01;
+			player.yVelocity = 0.05;
 			if (key(" W") && !lastSpace)
 			{
 				player.yVelocity = jumpSpeed * 1.2;
@@ -649,7 +678,7 @@ var Entity = (function()
 		var eY = backUp(y, this.y);
 
 		var topLeft = tilePos(eX, eY);
-		var bottomRight = tilePos(eX + this.width - 0.001, eY + this.height);
+		var bottomRight = tilePos(eX + this.width - 0.001, eY + this.height  - 0.001);
 		for (var x=topLeft[0]; x<bottomRight[0] + 1; x++)
 		{
 			for (var y=topLeft[1]; y<bottomRight[1] + 1; y++)
@@ -693,10 +722,10 @@ var Entity = (function()
 		var eX = backUp(x, this.x);
 		var eY = backUp(y, this.y);
 
-		return (eX <= other.x + other.width
-			&& other.x <= eX + this.width
-			&& eY <= other.y + other.height
-			&& other.y <= eY + this.height);
+		return (eX < other.x + other.width
+			&& other.x < eX + this.width
+			&& eY < other.y + other.height
+			&& other.y < eY + this.height);
 
 	};
 
@@ -718,7 +747,7 @@ var Entity = (function()
 	Entity.prototype.keepInScreen = function()
 	{
 
-		if (this.x <= 0)
+		if (this.x < 0)
 		{
 			this.x = 0;
 			return true;
@@ -728,7 +757,7 @@ var Entity = (function()
 			this.x = levelWidth - this.width;
 			return true;
 		}
-		if (this.y <= 0)
+		if (this.y < 0)
 		{
 			this.y = 0;
 			return true;
@@ -748,26 +777,21 @@ var Entity = (function()
 		var goingRight = oldX < this.x;
 		var goingLeft = oldX > this.x;
 		var goingUp = oldY > this.y;
-		var byX = this.collides(this.x, oldY - 0.01);
-		var byY = this.collides(oldX, this.y);
+		var byX = this.collides(this.x, oldY);
+		var byY = this.collides(oldX, this.y + 0.1);
 
-		if (this.collides())
+		if (byY)
 		{
-
-			if (byY)
-			{
-				this.yVelocity = 0;
-				this.xVelocity = byY.xVelocity;
-				this.y = Math.floor(byY.y + byY.height * goingUp)
-					- this.height * !goingUp;
-			}
-			if (byX)
-			{
-				this.xVelocity = 0;
-				this.x = Math.floor(byX.x + byX.width * goingLeft)
-					- this.width * goingRight;
-			}
-
+			this.yVelocity = 0;
+			this.xVelocity = byY.xVelocity;
+			 this.y = Math.floor(byY.y + byY.height * goingUp)
+				- this.height * !goingUp;
+		}
+		if (byX)
+		{
+			this.xVelocity = 0;
+			this.x = Math.floor(byX.x + byX.width * goingLeft)
+				- this.width * goingRight;
 		}
 
 	};
