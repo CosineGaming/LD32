@@ -54,6 +54,7 @@ function initialize()
 	container.focus();
 	container.addEventListener("mousedown", mouseDown);
 	container.addEventListener("mouseup", mouseUp);
+	container.addEventListener("contextmenu", function(event){event.preventDefault();});
 	container.addEventListener("mousemove", mouseMove);
 	container.addEventListener("keydown", keyDown);
 	container.addEventListener("keyup", keyUp);
@@ -358,7 +359,9 @@ function renderQuadrants()
 		for (var y=0; y<quadrantSpeeds[x].length; y++)
 		{
 			game.beginPath();
-			game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
+			//game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
+			var shade = String(Math.floor(quadrantSpeed([x, y]) * 128));
+			game.fillStyle = "rgba(" + shade + "," + shade + "," + shade + ",0.8)";
 			var sectWidth = container.width / levelData[currentLevel][0];
 			var sectHeight = container.height / levelData[currentLevel][0];
 			game.rect(x * sectWidth, y * sectHeight, sectWidth, sectHeight);
@@ -623,18 +626,20 @@ var Entity = (function()
 				height = this.image.height;
 			}
 		}
-		for (var bottomRight=0; bottomRight<2; bottomRight++)
+		for (var addWidth=0; addWidth<2; addWidth++)
 		{
-			var cornerQuadrant = getQuadrant(eX + width * bottomRight,
-				eY + height * bottomRight);
-			if (cornerQuadrant[0] == this.oldQuadrant[0]
-				&& cornerQuadrant[1] == this.oldQuadrant[1])
+			for (var addHeight=0; addHeight<2; addHeight++)
 			{
-				oldQuadrant = true;
-			}
-			else
-			{
-				newQuadrant = cornerQuadrant;
+				var cornerQuadrant = getQuadrant(eX + width * addWidth,
+					eY + height * addHeight);
+				if (quadrantSpeed(cornerQuadrant) == quadrantSpeed(this.oldQuadrant))
+				{
+					oldQuadrant = true;
+				}
+				else
+				{
+					newQuadrant = cornerQuadrant;
+				}
 			}
 		}
 		if (oldQuadrant && newQuadrant)
@@ -924,21 +929,19 @@ function mouseDown(event)
 
 	var x = event.clientX / tileWidth;
 	var y = event.clientY / tileHeight;
+	var direction = event.button == 0 ? 2 : 0.5;
 	var quadrant = getQuadrant(x, y);
 
 	var speed = quadrantSpeed(quadrant);
 
-	if (speed != 0)
+	quadrantSpeeds[quadrant[0]][quadrant[1]] *= direction;
+	if (speed == 2 && direction == 2)
 	{
-		quadrantSpeeds[quadrant[0]][quadrant[1]] *= 2;
+		quadrantSpeeds[quadrant[0]][quadrant[1]] = 0.25;
 	}
-	else
+	if (speed == 0.25 && direction == 0.5)
 	{
-		quadrantSpeeds[quadrant[0]][quadrant[1]] = 0.5;
-	}
-	if (speed == 2)
-	{
-		quadrantSpeeds[quadrant[0]][quadrant[1]] = 0;
+		quadrantSpeeds[quadrant[0]][quadrant[1]] = 2;
 	}
 
 }
