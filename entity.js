@@ -1,5 +1,3 @@
-
-
 var Entity = (function()
 {
 
@@ -339,7 +337,6 @@ var Entity = (function()
 		}
 		if (byX)
 		{
-			this.xVelocity = 0;
 			this.x = Math.floor(byX.x + byX.width * goingLeft)
 				- this.width * goingRight;
 		}
