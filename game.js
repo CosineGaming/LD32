@@ -159,8 +159,6 @@ function initializeWorld()
 	entity("bear", undefined, 4, 7, 1, 2);
 	loadAnimation(world["bear"], "assets/enemies/bear/", 3, 3);
 
-	backgrounds = ["assets/themes/grass/bg.png", "", "assets/themes/desert/bg.png", ""];
-
 	entity("player", undefined, levelData[0][1], levelData[0][2], 0.844, 1.688);
 	var player = world["player"];
 	player.animations = new Object();
@@ -168,7 +166,7 @@ function initializeWorld()
 	player.animations["right"] = player.animation;
 	loadAnimation(player, "assets/player/left/", 3, 4);
 	player.animations["left"] = player.animation;
-	loadAnimation(player, "assets/player/whack/", 4, 4);
+	loadAnimation(player, "assets/player/whack/", 4, 5, undefined, false);
 	player.animations["whack"] = player.animation;
 	loadAnimation(player, "assets/player/rest/", 3, 15, [0,1,2,1,0]);
 	player.animations["rest"] = player.animation;
@@ -189,11 +187,6 @@ function render(updateTime)
 		// We can't render if we don't have a game.
 		return;
 	}
-
-	/*if (world["back"].image)
-	{
-		game.drawImage(world["back"].image, 0, 0, container.width, container.height);
-	}*/
 
 	for (var y=0; y<levelWidth; y++)
 	{
@@ -536,12 +529,26 @@ function getAnimationFrame(anime, speed)
 	}
 	if (anime.frame >= anime.frames.length)
 	{
-		anime.frame = 0;
+		if (typeof "whenDone" == "function")
+		{
+			anime.whenDone(anime);
+		}
+		anime.frame = anime.frames.length - 1;
+		if (typeof anime.repeat != "undefined")
+		{
+			if (anime.repeat)
+			{
+				anime.frame = 0;
+			}
+		}
 	}
 	var frame = anime.images[anime.frames[anime.frame]];
-	if (frame.complete)
+	if (typeof frame != "undefined")
 	{
-		return frame;
+		if (frame.complete)
+		{
+			return frame;
+		}
 	}
 	return false;
 }
@@ -662,7 +669,7 @@ function getEntityQuadrant(entity, x=-1, y=-1)
 	if (entity.image)
 	{
 		width = entity.width;
-		height = entity.height - 0.05;
+		height = entity.height - 0.00001;
 	}
 	for (var bottomRight=0; bottomRight<2; bottomRight++)
 	{
