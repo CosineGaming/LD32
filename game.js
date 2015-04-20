@@ -88,10 +88,10 @@ function initializeWorld()
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - g - - g - - - - g - - g - - -",
 			"- - g - - - g - g g - g - - - g - -",
-			"- - - - - - - g - - g g - - - - - -",
+			"- - - - - - - g - - g - - - - - - -",
 			"g - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - i - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
-			"g - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
@@ -155,13 +155,21 @@ function initializeWorld()
 	world["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
 	world["r"] = new Entity("assets/themes/grass/horizontal/right.png");
 
-	world["gm"] = new Entity(undefined, 10, 4, 1, 1, -0.05);
-	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3)
+	world["gm"] = new Entity(undefined, 0, 13, 1, 1, "tile", "grass", 0.05);
+	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3);
+
+	world["gm2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
+	world["gm2"].animation = world["gm"].animation;
+	/*world["gm2"] = world["gm"];
+	world["gm2"].x = 15;
+	world["gm2"].y = 9;
+	world["gm2"].xVelocity = 0;
+	world["gm2"].yVelocity = 0.25;*/
 
 	world["bear"] = new Entity(undefined, 4, 7, 1, 2);
 	world["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
 
-	var player = new Entity(undefined, levelData[0][1], levelData[0][2], 0.844, 1.688);
+	var player = new Entity(undefined, levelData[0][1], levelData[0][2], 0.844, 1.688, "player");
 	world["player"] = player;
 	player.animations = new Object();
 	player.loadAnimation("assets/player/right/", 3, 4);
@@ -218,39 +226,38 @@ function update(totalTime)
 
 	delta = totalTime - lastTime;
 
-	var player = world["player"];
-
 	everyEntity(function(entity)
 	{
 
-		if (typeof entity.x != "undefined")
+		if (entity.name != "player")
 		{
 
-			if (entity != player)
+			if (entity.xVelocity)
 			{
-				if (entity.xVelocity)
-				{
-					entity.x += entity.xVelocity * quadrantSpeed(entity.getQuadrant());
-				}
-				if (entity.yVelocity)
-				{
-					entity.y += entity.yVelocity * quadrantSpeed(entity.getQuadrant());
-				}
+				entity.x += entity.xVelocity * quadrantSpeed(entity.getQuadrant());
+			}
+			if (entity.yVelocity)
+			{
+				entity.y += entity.yVelocity * quadrantSpeed(entity.getQuadrant());
 			}
 
 		}
 
-		if (typeof entity.name != "undefined")
+		if (entity.name == "tile")
 		{
 
-			if (entity.name == "tile")
+			if (entity.collides())
 			{
-				//if collide()
+				entity.keepInScreen();
+				entity.xVelocity *= -1;
+				entity.yVelocity *= -1;
 			}
 
 		}
 
 	});
+
+	var player = world["player"];
 
 	var speedMod = quadrantSpeed(player.getQuadrant());
 
@@ -262,8 +269,8 @@ function update(totalTime)
 		var oldX = player.x;
 		var oldY = player.y;
 
-		var hangLeft = collidesTile(player, player.x + 0.01, player.y - 0.001);
-		var hangRight = collidesTile(player, player.x - 0.01, player.y - 0.001);
+		var hangLeft = player.collidesTile(player.x + 0.01, player.y - 0.001);
+		var hangRight = player.collidesTile(player.x - 0.01, player.y - 0.001);
 
 		if (key("A") && !hangLeft)
 		{
@@ -280,7 +287,7 @@ function update(totalTime)
 			player.animation = player.animations["rest"];
 		}
 		var jumpSpeed = -0.3;
-		if ((key(" W") || keys[0]) && collidesTile(player, player.x, player.y) && !lastSpace)
+		if ((key(" W") || keys[0] ) && player.collidesTile() && !lastSpace)
 		{
 			player.yVelocity = jumpSpeed;
 		}
@@ -308,11 +315,11 @@ function update(totalTime)
 
 		var goingRight = oldX < player.x;
 		var goingLeft = oldX > player.x;
-		var byX = collidesTile(player, player.x, oldY - 0.001);
-		var byY = collidesTile(player, oldX, player.y);
+		var byX = player.collidesTile(player.x, oldY - 0.001);
+		var byY = player.collidesTile(oldX, player.y);
 		var goingDown = oldY < player.y;
 
-		if (collidesTile(player, player.x, player.y))
+		if (player.collidesTile())
 		{
 
 			if (byY)
@@ -329,22 +336,7 @@ function update(totalTime)
 
 		}
 
-		if (player.x < 0)
-		{
-			player.x = 0;
-		}
-		if (player.x > levelWidth - player.width)
-		{
-			player.x = levelWidth - player.width;
-		}
-		if (player.y < 0)
-		{
-			player.y = 0;
-		}
-		if (player.y > levelHeight - player.height)
-		{
-			// Die.
-		}
+		player.keepInScreen();
 
 	}
 
@@ -441,23 +433,19 @@ function renderTile(x, y)
 var Entity = (function()
 {
 
-	function Entity(image, x, y, width, height, xVelocity, yVelocity)
+	function Entity(image, x, y, width, height, name, type, xVelocity, yVelocity)
 	{
 
 		if (typeof image != "undefined")
 		{
 			this.loadImage(image);
 		}
-		if (typeof x != "undefined")
-		{
-			this.x = x;
-			this.y = y;
-		}
-		if (typeof width != "undefined")
-		{
-			this.width = width;
-			this.height = height;
-		}
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.name = backUp(name, "none");
+		this.type = backUp(type, "none");
 		this.xVelocity = backUp(xVelocity, 0);
 		this.yVelocity = backUp(yVelocity, 0);
 
@@ -530,7 +518,6 @@ var Entity = (function()
 			{
 				image.addEventListener("load", function() {
 					this.image = new Object();
-					this.animation.images[0] = image;
 					this.image.width = image.width / tileWidth;
 					this.image.height = image.height / tileHeight;
 				});
@@ -555,10 +542,7 @@ var Entity = (function()
 		}
 
 		this.animation.repeat = repeat;
-		if (typeof whenDone != "undefined")
-		{
-			this.animation.whenDone = whenDone;
-		}
+		this.animation.whenDone = whenDone;
 
 		this.animation.countdown = this.animation.frameMultiplier;
 		this.animation.frame = this.animation.frames[0];
@@ -671,6 +655,109 @@ var Entity = (function()
 
 	};
 
+	Entity.prototype.collidesTile = function(x, y)
+	{
+
+		var eX = backUp(x, this.x);
+		var eY = backUp(y, this.y);
+
+		var topLeft = tilePos(eX, eY);
+		var bottomRight = tilePos(eX + this.width - 0.001, eY + this.height);
+		for (var x=topLeft[0]; x<bottomRight[0] + 1; x++)
+		{
+			for (var y=topLeft[1]; y<bottomRight[1] + 1; y++)
+			{
+				if (getTile([x, y]) != "-")
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+
+	};
+
+	Entity.prototype.collidesBorder = function(x, y)
+	{
+
+		var eX = backUp(x, this.x);
+		var eY = backUp(y, this.y);
+
+		if (eX < 0)
+			return [-1, 0];
+		if (eX > levelWidth - this.width)
+			return [1, 0];
+		if (eY < 0)
+			return [0, -1];
+		if (eY > levelHeight - this.height)
+			return [0, 1];
+
+	}
+
+	Entity.prototype.collidesWorld = function(x, y)
+	{
+		for (var key in world)
+		{
+			if (world.hasOwnProperty(key))
+			{
+				other = world[key];
+				if (other != this)
+				{
+					if (this.collidesOther(other, x, y))
+					{
+						if (other.name != "none")
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	};
+
+	Entity.prototype.collidesOther = function(other, x, y)
+	{
+
+		var eX = backUp(x, this.x);
+		var eY = backUp(y, this.y);
+
+		return (eX < other.x + other.width
+			&& other.x < eX + this.width
+			&& eY < other.y + other.height
+			&& other.y < eY + this.height);
+
+	};
+
+	Entity.prototype.collides = function(x, y)
+	{
+		return this.collidesWorld(x, y)
+			|| this.collidesTile(x, y)
+			|| this.collidesBorder(x, y);
+	};
+
+	Entity.prototype.keepInScreen = function()
+	{
+
+		if (this.x <= 0)
+		{
+			this.x = 0;
+		}
+		if (this.x >= levelWidth - this.width)
+		{
+			this.x = levelWidth - this.width;
+		}
+		if (this.y <= 0)
+		{
+			this.y = 0;
+		}
+		if (this.y >= levelHeight - this.height)
+		{
+			this.y = levelHeight - this.height;
+		}
+
+	}
+
 	return Entity;
 
 })();
@@ -771,13 +858,13 @@ function getQuadrant(x, y)
 function quadrantSpeed(quadrant)
 {
 	if (quadrant[0] >= 0 && quadrant[0] < levelData[currentLevel][0]
-		&& quadrant[0] >= 0 && quadrant[0] < levelData[currentLevel][0])
+		&& quadrant[1] >= 0 && quadrant[1] < levelData[currentLevel][0])
 	{
 		return quadrantSpeeds[quadrant[0]][quadrant[1]];
 	}
 	else
 	{
-		return false;
+		return 1;
 	}
 }
 
@@ -792,50 +879,6 @@ function resetQuadrantSpeeds()
 			quadrantSpeeds[x].push(1);
 		}
 	}
-}
-
-function collidesTile(entity, x, y)
-{
-	var eX = x;
-	var eY = y;
-	if (typeof x == "undefined")
-	{
-		eX = entity.x;
-		eY = entity.y;
-	}
-	var topLeft = tilePos(x, y);
-	var bottomRight = tilePos(x + entity.width - 0.001, y + entity.height);
-	for (var x=topLeft[0]; x<bottomRight[0] + 1; x++)
-	{
-		for (var y=topLeft[1]; y<bottomRight[1] + 1; y++)
-		{
-			if (getTile([x, y]) != "-")
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-function collidesEntity(entity, x, y)
-{
-	return false;
-}
-
-function collides(entity, x, y)
-{
-	var e = collidesEntity(entity, x, y);
-	if (e)
-	{
-		return e;
-	}
-	var t = collidesTile(entity, x, y);
-	if (t)
-	{
-		return t;
-	}
-	return false;
 }
 
 // General Javascript help
