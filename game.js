@@ -108,9 +108,9 @@ function initializeWorld()
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - i - - - - - - - - - -",
 				"- g - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - g - - - - - - - -",
-				"- i - - - - i - - - - - - - - - g -",
-				"- - - - - - - - - - - - - - - - - g",
+				"- - - - - - i - - - - - i - - - - -",
+				"- i - - - - i - - - - - i - - - - i",
+				"- - - - - - - - - - - - - i - - - -",
 				"- - - - - - - - - - - - - - i - - -",
 				"- - i - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
@@ -206,12 +206,16 @@ function initializeWorld()
 	add["3"].animation = add["1"].animation;
 	add["4"] = new Entity(undefined, 7, 3, 1, 1, "tile", "grass", 0, 0.1);
 	add["4"].animation = add["1"].animation;
-	add["5"] = new Entity(undefined, 17, 9, 1, 1, "tile", "grass", 0, 0.1);
-	add["5"].animation = add["1"].animation;
 	add["6"] = new Entity(undefined, 7, 15, 1, 1, "tile", "grass", 0.05);
 	add["6"].animation = add["1"].animation;
 	add["7"] = new Entity(undefined, 14, 8, 1, 1, "tile", "grass", 0, 0.05);
 	add["7"].animation = add["1"].animation;
+	add["8"] = new Entity(undefined, 16, 5, 1, 1, "tile", "grass", -0.05);
+	add["8"].animation = add["1"].animation;
+	add["9"] = new Entity(undefined, 17, 6, 1, 1, "tile", "grass", -0.05);
+	add["9"].animation = add["1"].animation;
+	add["0"] = new Entity(undefined, 9, 4, 1, 1, "tile", "grass", 0.05);
+	add["0"].animation = add["1"].animation;
 
 	resetQuadrantSpeeds();
 
