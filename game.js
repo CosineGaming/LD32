@@ -123,7 +123,7 @@ function initializeWorld()
 
 	// Splits, spawnX, spawnY
 	levelData = [
-		[2, 0.001, 0.001],
+		[2, 8, -1],
 		[2, 0.001, 0.001]
 	];
 
@@ -159,9 +159,6 @@ function initializeWorld()
 	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3);
 
 	world["gm2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
-	world["gm2"].animation = world["gm"].animation;
-
-	world["gm2"] = new Entity(undefined, 0, 11, 1, 1, "tile", "grass", 0.05);
 	world["gm2"].animation = world["gm"].animation;
 	/*world["gm2"] = world["gm"];
 	world["gm2"].x = 15;
@@ -232,16 +229,18 @@ function update(totalTime)
 	everyEntity(function(entity)
 	{
 
+		var speedMod = quadrantSpeed(entity.getQuadrant());
+
 		if (entity.name != "player")
 		{
 
 			if (entity.xVelocity)
 			{
-				entity.x += entity.xVelocity * quadrantSpeed(entity.getQuadrant());
+				entity.x += entity.xVelocity * speedMod;
 			}
 			if (entity.yVelocity)
 			{
-				entity.y += entity.yVelocity * quadrantSpeed(entity.getQuadrant());
+				entity.y += entity.yVelocity * speedMod;
 			}
 
 		}
@@ -249,7 +248,19 @@ function update(totalTime)
 		if (entity.name == "tile")
 		{
 
-			if (entity.collides() || entity.keepInScreen())
+			var hit = entity.collides();
+			var direct = false;
+			if (hit)
+			{
+				if ((entity.xVelocity > 0 && hit.x - entity.x >= 1 - entity.xVelocity * speedMod)
+					|| (entity.xVelocity < 0 && hit.x - entity.x <= -1 - entity.xVelocity * speedMod)
+					|| (entity.yVelocity > 0 && hit.y - entity.y >= 1 - entity.yVelocity * speedMod)
+					|| (entity.yVelocity < 0 && hit.y - entity.y <= -1 - entity.yVelocity * speedMod))
+				{
+					direct = true;
+				}
+			}
+			if ((direct && hit.name != "player") || entity.keepInScreen())
 			{
 				entity.xVelocity *= -1;
 				entity.yVelocity *= -1;
@@ -271,8 +282,8 @@ function update(totalTime)
 		var oldX = player.x;
 		var oldY = player.y;
 
-		var hangLeft = player.collidesTile(player.x + 0.05, player.y - 0.001);
-		var hangRight = player.collidesTile(player.x - 0.05, player.y - 0.001);
+		var hangLeft = player.collidesTile(player.x + 0.05, player.y - 0.001) ? 1 : 0;
+		var hangRight = player.collidesTile(player.x - 0.05, player.y - 0.001) ? 1 : 0;
 
 		if (key("A") && !hangLeft)
 		{
@@ -288,16 +299,17 @@ function update(totalTime)
 		{
 			player.animation = player.animations["rest"];
 		}
-		var jumpSpeed = -0.3;
-		if ((key(" W") || keys[0] ) && player.collidesTile() && !lastSpace)
-		{
-			player.yVelocity = jumpSpeed;
-		}
+
 		if (key("E"))
 		{
 			player.animation = player.animations["whack"];
 		}
+		else
+		{
+			player.animations["whack"].frame = 0;
+		}
 
+		var jumpSpeed = -0.3;
 		if (hangLeft || hangRight)
 		{
 			player.yVelocity = 0.01;
@@ -308,37 +320,19 @@ function update(totalTime)
 				player.x += speed * (hangRight * 2 - 1);
 			}
 		}
+
+		if ((key(" W") || keys[0]) && player.collides(player.x, player.y + 0.001) && !lastSpace)
+		{
+			player.yVelocity = jumpSpeed;
+		}
 		lastSpace = key(" W");
 
-		player.yVelocity += gravity * speedMod;
+		player.x += player.xVelocity * speedMod;
 		player.y += player.yVelocity * speedMod;
 		player.xVelocity *= Math.pow(0.85, speedMod);
-		player.x += player.xVelocity * speedMod;
+		player.yVelocity += gravity * speedMod;
 
-		var goingRight = oldX < player.x;
-		var goingLeft = oldX > player.x;
-		var byX = player.collides(player.x, oldY - 0.01);
-		var byY = player.collides(oldX, player.y);
-		var goingDown = oldY < player.y;
-
-		var other = player.collides();
-
-		if (other)
-		{
-
-			if (byY)
-			{
-				player.yVelocity = 0;
-				player.y = Math.floor(byY.y + byY.height * !goingDown)
-					- player.height * goingDown;
-			}
-			if (byX)
-			{
-				player.x = Math.floor(byX.x + byX.width * goingLeft)
-					- player.width * goingRight;
-			}
-
-		}
+		player.handleCollisions(oldX, oldY);
 
 		player.keepInScreen();
 
@@ -672,7 +666,7 @@ var Entity = (function()
 			for (var y=topLeft[1]; y<bottomRight[1] + 1; y++)
 			{
 				var tile = getTile([x, y]);
-				if (tile != "-" && tile != "i")
+				if (tile != "-" && (tile != "i" || this.name == "tile"))
 				{
 					return new Entity(undefined, x, y, 1, 1);
 				}
@@ -710,10 +704,10 @@ var Entity = (function()
 		var eX = backUp(x, this.x);
 		var eY = backUp(y, this.y);
 
-		return (eX < other.x + other.width
-			&& other.x < eX + this.width
-			&& eY < other.y + other.height
-			&& other.y < eY + this.height);
+		return (eX <= other.x + other.width
+			&& other.x <= eX + this.width
+			&& eY <= other.y + other.height
+			&& other.y <= eY + this.height);
 
 	};
 
@@ -757,7 +751,37 @@ var Entity = (function()
 		}
 		return false;
 
-	}
+	};
+
+	Entity.prototype.handleCollisions = function(oldX, oldY)
+	{
+
+		var goingRight = oldX < this.x;
+		var goingLeft = oldX > this.x;
+		var goingUp = oldY > this.y;
+		var byX = this.collides(this.x, oldY - 0.01);
+		var byY = this.collides(oldX, this.y);
+
+		if (this.collides())
+		{
+
+			if (byY)
+			{
+				this.yVelocity = 0;
+				this.xVelocity = byY.xVelocity;
+				this.y = Math.floor(byY.y + byY.height * goingUp)
+					- this.height * !goingUp;
+			}
+			if (byX)
+			{
+				this.xVelocity = 0;
+				this.x = Math.floor(byX.x + byX.width * goingLeft)
+					- this.width * goingRight;
+			}
+
+		}
+
+	};
 
 	return Entity;
 
@@ -877,7 +901,7 @@ function resetQuadrantSpeeds()
 		quadrantSpeeds.push([]);
 		for (var y=0; y<levelData[currentLevel][0]; ++y)
 		{
-			quadrantSpeeds[x].push(0);
+			quadrantSpeeds[x].push(1);
 		}
 	}
 }
