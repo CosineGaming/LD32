@@ -143,32 +143,34 @@ function initializeWorld()
 	}
 
 	// Level 1 tiles and moving tile placement
-	entity("g", "assets/themes/grass/grass.png");
+	world["bg"] = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight)
 
-	entity("b", "assets/themes/grass/wall/base.png");
-	entity("m", "assets/themes/grass/wall/middle.png");
-	entity("t", "assets/themes/grass/wall/top.png");
+	world["g"] = new Entity("assets/themes/grass/grass.png");
 
-	entity("l", "assets/themes/grass/horizontal/left.png");
-	entity("h", "assets/themes/grass/horizontal/middle.png");
-	entity("r", "assets/themes/grass/horizontal/right.png");
+	world["b"] = new Entity("assets/themes/grass/wall/base.png");
+	world["m"] = new Entity("assets/themes/grass/wall/middle.png");
+	world["t"] = new Entity("assets/themes/grass/wall/top.png");
 
-	entity("gm", undefined, 10, 4, 1, 1, -0.05);
-	loadAnimation(world["gm"], "assets/themes/grass/moving/", 5, 3)
+	world["l"] = new Entity("assets/themes/grass/horizontal/left.png");
+	world["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
+	world["r"] = new Entity("assets/themes/grass/horizontal/right.png");
 
-	entity("bear", undefined, 4, 7, 1, 2);
-	loadAnimation(world["bear"], "assets/enemies/bear/", 3, 3);
+	world["gm"] = new Entity(undefined, 10, 4, 1, 1, -0.05);
+	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3)
 
-	entity("player", undefined, levelData[0][1], levelData[0][2], 0.844, 1.688);
-	var player = world["player"];
+	world["bear"] = new Entity(undefined, 4, 7, 1, 2);
+	world["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
+
+	var player = new Entity(undefined, levelData[0][1], levelData[0][2], 0.844, 1.688);
+	world["player"] = player;
 	player.animations = new Object();
-	loadAnimation(player, "assets/player/right/", 3, 4);
+	player.loadAnimation("assets/player/right/", 3, 4);
 	player.animations["right"] = player.animation;
-	loadAnimation(player, "assets/player/left/", 3, 4);
+	player.loadAnimation("assets/player/left/", 3, 4);
 	player.animations["left"] = player.animation;
-	loadAnimation(player, "assets/player/whack/", 4, 5, undefined, false);
+	player.loadAnimation("assets/player/whack/", 4, 5, undefined, false);
 	player.animations["whack"] = player.animation;
-	loadAnimation(player, "assets/player/rest/", 3, 15, [0,1,2,1,0]);
+	player.loadAnimation("assets/player/rest/", 3, 15, [0,1,2,1,0]);
 	player.animations["rest"] = player.animation;
 
 	resetQuadrantSpeeds();
@@ -178,7 +180,7 @@ function initializeWorld()
 function render(updateTime)
 {
 
-	if (game)
+	if ("game" in window)
 	{
 		game.clearRect(0, 0, container.width, container.height);
 	}
@@ -188,108 +190,17 @@ function render(updateTime)
 		return;
 	}
 
+	everyEntity(function(entity){entity.render();});
+
 	for (var y=0; y<levelWidth; y++)
 	{
 		for (var x=0; x<levelHeight; x++)
 		{
-			var tileType = levels[currentLevel][y][x];
-			var tile = world[tileType];
-			if (tile)
-			{
-				var placeX = Math.round(x * tileWidth);
-				var placeY = Math.round(y * tileHeight);
-				var draw = false;
-				if (tile.animation)
-				{
-					var frame = getAnimationFrame(tile.animation,
-						quadrantSpeed(getQuadrant(x, y)));
-					if (frame)
-					{
-						draw = frame;
-					}
-				}
-				else if (tile.image)
-				{
-					if (tile.image.complete)
-					{
-						draw = tile.image
-					}
-				}
-				if (draw)
-				{
-					game.drawImage(draw, placeX, placeY, tileWidth, tileHeight);
-				}
-			}
+			renderTile(x, y);
 		}
 	}
 
-	everyEntity(function(entity){
-		if (typeof entity.x !== "undefined")
-		{
-			var draw = false;
-			if (entity.animation)
-			{
-				var frame = getAnimationFrame(entity.animation,
-					quadrantSpeed(getEntityQuadrant(entity, entity.x, entity.y)));
-				if (frame)
-				{
-					draw = frame;
-				}
-			}
-			else if (entity.image)
-			{
-				if (entity.image.complete)
-				{
-					draw = entity.image;
-				}
-			}
-			if (draw)
-			{
-				var width = entity.width;
-				var height = entity.height;
-				if (!entity.width)
-				{
-					width = entity.image.width;
-					height = entity.image.height;
-				}
-				game.drawImage(draw, Math.round(entity.x * tileWidth),
-					Math.round(entity.y * tileHeight),
-					Math.round(width * tileWidth),
-					Math.round(height * tileHeight));
-			}
-		}
-	});
-
-	for (var x=0; x<quadrantSpeeds.length; x++)
-	{
-		for (var y=0; y<quadrantSpeeds[x].length; y++)
-		{
-			game.beginPath();
-			game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
-			var sectWidth = container.width / levelData[currentLevel][0];
-			var sectHeight = container.height / levelData[currentLevel][0];
-			game.rect(x * sectWidth, y * sectHeight, sectWidth, sectHeight);
-			game.fill();
-		}
-	}
-
-	game.strokeStyle = "rgba(0,0,0," + String(pulse) + ")";
-	var xDistance = container.width / levelData[currentLevel][0];
-	for (var x=1; x<levelData[currentLevel][0]; x++)
-	{
-		game.beginPath();
-		game.moveTo(x * xDistance, 0);
-		game.lineTo(x * xDistance, container.height);
-		game.stroke();
-	}
-	var yDistance = container.height / levelData[currentLevel][0];
-	for (var y=1; y<levelData[currentLevel][0]; y++)
-	{
-		game.beginPath();
-		game.moveTo(0, y * yDistance);
-		game.lineTo(container.width, y * yDistance);
-		game.stroke();
-	}
+	renderQuadrants();
 
 	var displayFps = true;
 
@@ -307,26 +218,41 @@ function update(totalTime)
 
 	delta = totalTime - lastTime;
 
-	everyEntity(function(entity){
+	var player = world["player"];
+
+	everyEntity(function(entity)
+	{
+
 		if (typeof entity.x != "undefined")
 		{
-			if (entity.name != "player")
+
+			if (entity != player)
 			{
 				if (entity.xVelocity)
 				{
-					entity.x += entity.xVelocity;
+					entity.x += entity.xVelocity * quadrantSpeed(entity.getQuadrant());
 				}
 				if (entity.yVelocity)
 				{
-				//	entity.y += entity.yVelocity;
+					entity.y += entity.yVelocity * quadrantSpeed(entity.getQuadrant());
 				}
 			}
+
 		}
+
+		if (typeof entity.name != "undefined")
+		{
+
+			if (entity.name == "tile")
+			{
+				//if collide()
+			}
+
+		}
+
 	});
 
-	var player = world["player"];
-
-	var speedMod = quadrantSpeed(getEntityQuadrant(player));
+	var speedMod = quadrantSpeed(player.getQuadrant());
 
 	if (speedMod != 0)
 	{
@@ -378,7 +304,7 @@ function update(totalTime)
 		player.yVelocity += gravity * speedMod;
 		player.y += player.yVelocity * speedMod;
 		player.xVelocity *= Math.pow(0.85, speedMod);
-		player.xVelocity += player.xVelocity;
+		player.x += player.xVelocity * speedMod;
 
 		var goingRight = oldX < player.x;
 		var goingLeft = oldX > player.x;
@@ -434,124 +360,322 @@ function update(totalTime)
 
 }
 
-// Other functinos (Gonna leave that typo)
-
-function entity(name, image, x, y, width, height, xVelocity, yVelocity)
-{
-	world[name] = new Object();
-	world[name].name = name;
-	if (typeof image != "undefined")
-	{
-		loadImage(world[name], image);
-	}
-	if (typeof x != "undefined")
-	{
-		world[name].x = x;
-		world[name].y = y;
-	}
-	if (typeof width != "undefined")
-	{
-		world[name].width = width;
-		world[name].height = height;
-	}
-	world[name].xVelocity = backUp(xVelocity, 0);
-	world[name].yVelocity = backUp(yVelocity, 0);
-}
-
-function loadImage(addTo, url)
+function renderQuadrants()
 {
 
-	var image = new Image();
-	//image.addEventListener("load", function(){
-		addTo.image = image;
-	//});
-	image.src = url;
-
-}
-
-function loadAnimation(addTo, url, count, frameMultiplier, frames, repeat, whenDone, suffix)
-{
-
-	frameMultiplier = backUp(frameMultiplier, 1);
-	repeat = backUp(repeat, true);
-	suffix = backUp(suffix, ".png");
-
-	addTo.animation = new Object();
-	addTo.animation.images = [];
-	for (var frame=0; frame<count; frame++)
+	for (var x=0; x<quadrantSpeeds.length; x++)
 	{
-		var image = new Image();
-		if (frame == 0)
+		for (var y=0; y<quadrantSpeeds[x].length; y++)
 		{
-			image.addEventListener("load", function() {
-				addTo.image = new Object();
-				addTo.image.width = image.width / tileWidth;
-				addTo.image.height = image.height / tileHeight;
-			});
-		}
-		image.src = url + String(frame) + suffix;
-		addTo.animation.images.push(image);
-	}
-
-	addTo.animation.frameMultiplier = frameMultiplier;
-
-	if (typeof frames != "undefined")
-	{
-		addTo.animation.frames = frames;
-	}
-	else
-	{
-		addTo.animation.frames = [];
-		for (var frame=0; frame<count; frame++)
-		{
-			addTo.animation.frames.push(frame);
+			game.beginPath();
+			game.fillStyle = "rgba(0,0,0," + String(quadrantSpeed([x, y]) / 4) + ")";
+			var sectWidth = container.width / levelData[currentLevel][0];
+			var sectHeight = container.height / levelData[currentLevel][0];
+			game.rect(x * sectWidth, y * sectHeight, sectWidth, sectHeight);
+			game.fill();
 		}
 	}
 
-	addTo.animation.repeat = repeat;
-	if (typeof whenDone != "undefined")
+	game.strokeStyle = "rgba(0,0,0," + String(pulse) + ")";
+	var xDistance = container.width / levelData[currentLevel][0];
+	for (var x=1; x<levelData[currentLevel][0]; x++)
 	{
-		addTo.animation.whenDone = whenDone;
+		game.beginPath();
+		game.moveTo(x * xDistance, 0);
+		game.lineTo(x * xDistance, container.height);
+		game.stroke();
 	}
-
-	addTo.animation.countdown = addTo.animation.frameMultiplier;
-	addTo.animation.frame = addTo.animation.frames[0];
+	var yDistance = container.height / levelData[currentLevel][0];
+	for (var y=1; y<levelData[currentLevel][0]; y++)
+	{
+		game.beginPath();
+		game.moveTo(0, y * yDistance);
+		game.lineTo(container.width, y * yDistance);
+		game.stroke();
+	}
 
 }
 
-function getAnimationFrame(anime, speed)
+function renderTile(x, y)
 {
-	anime.countdown -= speed;
-	if (anime.countdown <= 0)
+
+	var tileType = levels[currentLevel][y][x];
+	var tile = world[tileType];
+
+	if (tile)
 	{
-		anime.countdown = anime.frameMultiplier;
-		anime.frame += 1;
-	}
-	if (anime.frame >= anime.frames.length)
-	{
-		if (typeof "whenDone" == "function")
+
+		var placeX = Math.round(x * tileWidth);
+		var placeY = Math.round(y * tileHeight);
+		var draw = null;
+
+		if (tile.animation)
 		{
-			anime.whenDone(anime);
-		}
-		anime.frame = anime.frames.length - 1;
-		if (typeof anime.repeat != "undefined")
-		{
-			if (anime.repeat)
+			var frame = getAnimationFrame(tile.animation,
+				quadrantSpeed(getQuadrant(x, y)));
+			if (frame)
 			{
-				anime.frame = 0;
+				draw = frame;
 			}
 		}
-	}
-	var frame = anime.images[anime.frames[anime.frame]];
-	if (typeof frame != "undefined")
-	{
-		if (frame.complete)
+		else if (tile.image)
 		{
-			return frame;
+			if (tile.image.complete)
+			{
+				draw = tile.image
+			}
 		}
+
+		if (draw)
+		{
+			if (draw.complete)
+			{
+				game.drawImage(draw, placeX, placeY, tileWidth, tileHeight);
+			}
+		}
+
 	}
-	return false;
+
 }
+
+var Entity = (function()
+{
+
+	function Entity(image, x, y, width, height, xVelocity, yVelocity)
+	{
+
+		if (typeof image != "undefined")
+		{
+			this.loadImage(image);
+		}
+		if (typeof x != "undefined")
+		{
+			this.x = x;
+			this.y = y;
+		}
+		if (typeof width != "undefined")
+		{
+			this.width = width;
+			this.height = height;
+		}
+		this.xVelocity = backUp(xVelocity, 0);
+		this.yVelocity = backUp(yVelocity, 0);
+
+	}
+
+	Entity.prototype.render = function()
+	{
+
+		if (typeof this.x != "undefined")
+		{
+
+			var draw = false;
+
+			if (this.animation)
+			{
+				var frame = this.getAnimationFrame();
+				if (frame)
+				{
+					draw = frame;
+				}
+			}
+			else if (this.image)
+			{
+				if (this.image.complete)
+				{
+					draw = this.image;
+				}
+			}
+
+			if (draw)
+			{
+
+				var width = this.width;
+				var height = this.height;
+				if (!this.width)
+				{
+					width = this.image.width;
+					height = this.image.height;
+				}
+				game.drawImage(draw, Math.round(this.x * tileWidth),
+					Math.round(this.y * tileHeight),
+					Math.round(width * tileWidth),
+					Math.round(height * tileHeight));
+			}
+
+		}
+
+	};
+
+	Entity.prototype.loadImage = function(url)
+	{
+		var image = new Image();
+		image.src = url;
+		this.image = image;
+	};
+
+	Entity.prototype.loadAnimation = function(url, count, frameMultiplier, frames, repeat, whenDone, suffix)
+	{
+
+		frameMultiplier = backUp(frameMultiplier, 1);
+		repeat = backUp(repeat, true);
+		suffix = backUp(suffix, ".png");
+
+		this.animation = new Object();
+		this.animation.images = [];
+		for (var frame=0; frame<count; frame++)
+		{
+			var image = new Image();
+			if (frame == 0)
+			{
+				image.addEventListener("load", function() {
+					this.image = new Object();
+					this.animation.images[0] = image;
+					this.image.width = image.width / tileWidth;
+					this.image.height = image.height / tileHeight;
+				});
+			}
+			image.src = url + String(frame) + suffix;
+			this.animation.images.push(image);
+		}
+
+		this.animation.frameMultiplier = frameMultiplier;
+
+		if (typeof frames != "undefined")
+		{
+			this.animation.frames = frames;
+		}
+		else
+		{
+			this.animation.frames = [];
+			for (var frame=0; frame<count; frame++)
+			{
+				this.animation.frames.push(frame);
+			}
+		}
+
+		this.animation.repeat = repeat;
+		if (typeof whenDone != "undefined")
+		{
+			this.animation.whenDone = whenDone;
+		}
+
+		this.animation.countdown = this.animation.frameMultiplier;
+		this.animation.frame = this.animation.frames[0];
+
+	};
+
+	Entity.prototype.getAnimationFrame = function()
+	{
+
+		var anime = this.animation;
+
+		anime.countdown -= quadrantSpeed(this.getQuadrant());
+		if (anime.countdown <= 0)
+		{
+			anime.countdown = anime.frameMultiplier;
+			anime.frame += 1;
+		}
+
+		if (anime.frame >= anime.frames.length)
+		{
+			if (typeof "whenDone" == "function")
+			{
+				anime.whenDone(anime);
+			}
+			anime.frame = anime.frames.length - 1;
+			if (typeof anime.repeat != "undefined")
+			{
+				if (anime.repeat)
+				{
+					anime.frame = 0;
+				}
+			}
+		}
+
+		var frame = anime.images[anime.frames[anime.frame]];
+		if (typeof frame != "undefined")
+		{
+			if (frame.complete)
+			{
+				return frame;
+			}
+		}
+
+		return false;
+
+	};
+
+	Entity.prototype.getQuadrant = function(x, y)
+	{
+
+		var eX = x;
+		var eY = y;
+		if (typeof x == "undefined")
+		{
+			if (typeof this.x == "undefined")
+			{
+				return false;
+			}
+			eX = this.x;
+			eY = this.y;
+		}
+		if (typeof this.oldQuadrant == "undefined")
+		{
+			this.oldQuadrant = [-1, -1];
+		}
+		var newQuadrant = false;
+		var oldQuadrant = false;
+		var width = 0;
+		var height = 0;
+		if (this.width)
+		{
+			width = this.width;
+			height = this.height - 0.00001;
+		}
+		else if (this.image)
+		{
+			if (this.image.width)
+			{
+				width = this.image.width;
+				height = this.image.height;
+			}
+		}
+		for (var bottomRight=0; bottomRight<2; bottomRight++)
+		{
+			var cornerQuadrant = getQuadrant(eX + width * bottomRight,
+				eY + height * bottomRight);
+			if (cornerQuadrant[0] == this.oldQuadrant[0]
+				&& cornerQuadrant[1] == this.oldQuadrant[1])
+			{
+				oldQuadrant = true;
+			}
+			else
+			{
+				newQuadrant = cornerQuadrant;
+			}
+		}
+		if (oldQuadrant && newQuadrant)
+		{
+			return newQuadrant;
+		}
+		else if (newQuadrant)
+		{
+			this.oldQuadrant = newQuadrant;
+			return newQuadrant;
+		}
+		else
+		{
+			return this.oldQuadrant;
+		}
+
+	};
+
+	return Entity;
+
+})();
+
+// Other functinos (Gonna leave that typo)
 
 function everyEntity(what)
 {
@@ -644,63 +768,6 @@ function getQuadrant(x, y)
 		Math.floor(y * levelData[currentLevel][0] / levelHeight)];
 }
 
-function getEntityQuadrant(entity, x=-1, y=-1)
-{
-
-	var eX = x;
-	var eY = y;
-	if (x == -1)
-	{
-		if (typeof entity.x == "undefined")
-		{
-			return false;
-		}
-		eX = entity.x;
-		eY = entity.y;
-	}
-	if (typeof entity.oldQuadrant == "undefined")
-	{
-		entity.oldQuadrant = [-1, -1];
-	}
-	var newQuadrant = false;
-	var oldQuadrant = false;
-	var width = 0;
-	var height = 0;
-	if (entity.image)
-	{
-		width = entity.width;
-		height = entity.height - 0.00001;
-	}
-	for (var bottomRight=0; bottomRight<2; bottomRight++)
-	{
-		var cornerQuadrant = getQuadrant(eX + width * bottomRight,
-			eY + height * bottomRight);
-		if (cornerQuadrant[0] == entity.oldQuadrant[0]
-			&& cornerQuadrant[1] == entity.oldQuadrant[1])
-		{
-			oldQuadrant = true;
-		}
-		else
-		{
-			newQuadrant = cornerQuadrant;
-		}
-	}
-	if (oldQuadrant && newQuadrant)
-	{
-		return newQuadrant;
-	}
-	else if (newQuadrant)
-	{
-		entity.oldQuadrant = newQuadrant;
-		return newQuadrant;
-	}
-	else
-	{
-		return entity.oldQuadrant;
-	}
-
-}
-
 function quadrantSpeed(quadrant)
 {
 	if (quadrant[0] >= 0 && quadrant[0] < levelData[currentLevel][0]
@@ -727,11 +794,11 @@ function resetQuadrantSpeeds()
 	}
 }
 
-function collidesTile(entity, x=-1, y=-1)
+function collidesTile(entity, x, y)
 {
 	var eX = x;
 	var eY = y;
-	if (x == -1)
+	if (typeof x == "undefined")
 	{
 		eX = entity.x;
 		eY = entity.y;
@@ -751,12 +818,12 @@ function collidesTile(entity, x=-1, y=-1)
 	return false;
 }
 
-function collidesEntity(entity, x=-1, y=-1)
+function collidesEntity(entity, x, y)
 {
 	return false;
 }
 
-function collides(entity, x=-1, y=-1)
+function collides(entity, x, y)
 {
 	var e = collidesEntity(entity, x, y);
 	if (e)
