@@ -15,7 +15,7 @@ var lastTime = 0;
 var quadrantSpeeds = [];
 
 var levels;
-var level = 0;
+var level = 1;
 var levelWorlds = [];
 
 var tileWidth = 64;
@@ -106,25 +106,25 @@ function initializeWorld()
 			tiles : [
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - - i - - - - - - - - - -",
+				"- g - - - - - - - - - - - - - - - -",
+				"- - - - - - - - - g - - - - - - - -",
+				"- i - - - - i - - - - - - - - - g -",
+				"- - - - - - - - - - - - - - - - - g",
+				"- - - - - - - - - - - - - - i - - -",
+				"- - i - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - g - - g - - - - g - - g - - -",
-				"- - g - - i g - g g - g - - - g - -",
-				"- - - - - - - g - - g - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - i - - - - - - - - - - -",
 				"- - - - - - - - - i - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - g - - - - - - - - - - -",
+				"- - - - - - - i - - - - - - - - - -",
+				"- - i - - - - - i - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -"
 			],
 			entities : new Object(),
-			splits : 2
+			splits : 3
 		}
 
 	];
@@ -172,10 +172,8 @@ function initializeWorld()
 	add["3"].animation = add["1"].animation;
 	add["4"] = new Entity(undefined, 0, 9, 1, 1, "tile", "grass", 0.05);
 	add["4"].animation = add["1"].animation;
-	add["5"] = new Entity(undefined, 16, 8, 1, 1, "tile", "grass", -0.05);
+	add["5"] = new Entity(undefined, 16, 8, 1, 1, "tile", "grass", 0.05);
 	add["5"].animation = add["1"].animation;
-	add["6"] = new Entity(undefined, 17, 9, 1, 1, "tile", "grass", -0.05);
-	add["6"].animation = add["1"].animation;
 	/*levels[level].entities["gm2"] = levels[level].entities["gm"];
 	levels[level].entities["gm2"].x = 15;
 	levels[level].entities["gm2"].y = 9;
@@ -185,7 +183,7 @@ function initializeWorld()
 	// levelWorlds[0]["bear"] = new Entity(undefined, 4, 7, 1, 2);
 	// levelWorlds[0]["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
 
-	var player = new Entity(undefined, 8, 0, 0.5, 1, "player");
+	var player = new Entity(undefined, 1, 0, 0.8, 1.6, "player");
 	levels[level].entities["player"] = player;
 	player.animations = new Object();
 	player.loadAnimation("assets/player/right/", 3, 4);
@@ -194,8 +192,26 @@ function initializeWorld()
 	player.animations["left"] = player.animation;
 	player.loadAnimation("assets/player/whack/", 4, 5, undefined, false);
 	player.animations["whack"] = player.animation;
-	player.loadAnimation("assets/player/rest/", 3, 15, [0,1,2,1,0]);
+	player.loadAnimation("assets/player/rest/", 3, 10, [0,1,2,1]);
 	player.animations["rest"] = player.animation;
+
+	levels[1].background = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight);
+	add = levels[1].entities;
+	add["g"] = new Entity("assets/themes/grass/grass.png");
+	add["1"] = new Entity(undefined, 4, 5, 1, 1, "tile", "grass", 0.05);
+	add["1"].animation = levels[0].entities["1"].animation;
+	add["2"] = new Entity(undefined, 5, 11, 1, 1, "tile", "grass", 0.05);
+	add["2"].animation = add["1"].animation;
+	add["3"] = new Entity(undefined, 2, 10, 1, 1, "tile", "grass", 0, -0.1);
+	add["3"].animation = add["1"].animation;
+	add["4"] = new Entity(undefined, 7, 3, 1, 1, "tile", "grass", 0, 0.1);
+	add["4"].animation = add["1"].animation;
+	add["5"] = new Entity(undefined, 17, 9, 1, 1, "tile", "grass", 0, 0.1);
+	add["5"].animation = add["1"].animation;
+	add["6"] = new Entity(undefined, 7, 15, 1, 1, "tile", "grass", 0.05);
+	add["6"].animation = add["1"].animation;
+	add["7"] = new Entity(undefined, 14, 8, 1, 1, "tile", "grass", 0, 0.05);
+	add["7"].animation = add["1"].animation;
 
 	resetQuadrantSpeeds();
 
@@ -273,10 +289,10 @@ function update(totalTime)
 			var direct = false;
 			if (hit)
 			{
-				if ((entity.xVelocity > 0 && hit.x - entity.x >= 1 - entity.xVelocity * speedMod)
-					|| (entity.xVelocity < 0 && hit.x - entity.x <= -1 - entity.xVelocity * speedMod)
-					|| (entity.yVelocity > 0 && hit.y - entity.y >= 1 - entity.yVelocity * speedMod)
-					|| (entity.yVelocity < 0 && hit.y - entity.y <= -1 - entity.yVelocity * speedMod))
+				if ((entity.xVelocity > 0 && hit.x - oldX >= 0.9)
+					|| (entity.xVelocity < 0 && hit.x - oldX <= -0.9)
+					|| (entity.yVelocity > 0 && hit.y - oldY >= 0.9)
+					|| (entity.yVelocity < 0 && hit.y - oldY <= -0.9))
 				{
 					direct = true;
 				}
@@ -288,6 +304,10 @@ function update(totalTime)
 				entity.yVelocity *= -1;
 				entity.x += entity.xVelocity;
 				entity.y += entity.yVelocity;
+			}
+			else if (hit)
+			{
+				alert(hit.x - oldX);
 			}
 
 		}
