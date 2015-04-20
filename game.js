@@ -89,7 +89,7 @@ function initializeWorld()
 			"- - - g - - g - - - - g - - g - - -",
 			"- - g - - - g - g g - g - - - g - -",
 			"- - - - - - - g - - g - - - - - - -",
-			"g - - - - - - - - - - - - - - - - -",
+			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - i - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
 			"- - - - - - - - - - - - - - - - - -",
@@ -159,6 +159,9 @@ function initializeWorld()
 	world["gm"].loadAnimation("assets/themes/grass/moving/", 5, 3);
 
 	world["gm2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
+	world["gm2"].animation = world["gm"].animation;
+
+	world["gm2"] = new Entity(undefined, 0, 11, 1, 1, "tile", "grass", 0.05);
 	world["gm2"].animation = world["gm"].animation;
 	/*world["gm2"] = world["gm"];
 	world["gm2"].x = 15;
@@ -246,9 +249,8 @@ function update(totalTime)
 		if (entity.name == "tile")
 		{
 
-			if (entity.collides())
+			if (entity.collides() || entity.keepInScreen())
 			{
-				entity.keepInScreen();
 				entity.xVelocity *= -1;
 				entity.yVelocity *= -1;
 			}
@@ -269,8 +271,8 @@ function update(totalTime)
 		var oldX = player.x;
 		var oldY = player.y;
 
-		var hangLeft = player.collidesTile(player.x + 0.01, player.y - 0.001);
-		var hangRight = player.collidesTile(player.x - 0.01, player.y - 0.001);
+		var hangLeft = player.collidesTile(player.x + 0.05, player.y - 0.001);
+		var hangRight = player.collidesTile(player.x - 0.05, player.y - 0.001);
 
 		if (key("A") && !hangLeft)
 		{
@@ -315,23 +317,25 @@ function update(totalTime)
 
 		var goingRight = oldX < player.x;
 		var goingLeft = oldX > player.x;
-		var byX = player.collidesTile(player.x, oldY - 0.001);
-		var byY = player.collidesTile(oldX, player.y);
+		var byX = player.collides(player.x, oldY - 0.01);
+		var byY = player.collides(oldX, player.y);
 		var goingDown = oldY < player.y;
 
-		if (player.collidesTile())
+		var other = player.collides();
+
+		if (other)
 		{
 
 			if (byY)
 			{
 				player.yVelocity = 0;
-				player.y = Math.floor(player.y + player.height * goingDown)
-					- player.height * goingDown + !goingDown;
+				player.y = Math.floor(byY.y + byY.height * !goingDown)
+					- player.height * goingDown;
 			}
 			if (byX)
 			{
-				player.x = Math.floor(player.x + player.width * goingRight)
-					- player.width * goingRight + goingLeft;
+				player.x = Math.floor(byX.x + byX.width * goingLeft)
+					- player.width * goingRight;
 			}
 
 		}
@@ -667,32 +671,16 @@ var Entity = (function()
 		{
 			for (var y=topLeft[1]; y<bottomRight[1] + 1; y++)
 			{
-				if (getTile([x, y]) != "-")
+				var tile = getTile([x, y]);
+				if (tile != "-" && tile != "i")
 				{
-					return true;
+					return new Entity(undefined, x, y, 1, 1);
 				}
 			}
 		}
 		return false;
 
 	};
-
-	Entity.prototype.collidesBorder = function(x, y)
-	{
-
-		var eX = backUp(x, this.x);
-		var eY = backUp(y, this.y);
-
-		if (eX < 0)
-			return [-1, 0];
-		if (eX > levelWidth - this.width)
-			return [1, 0];
-		if (eY < 0)
-			return [0, -1];
-		if (eY > levelHeight - this.height)
-			return [0, 1];
-
-	}
 
 	Entity.prototype.collidesWorld = function(x, y)
 	{
@@ -707,7 +695,7 @@ var Entity = (function()
 					{
 						if (other.name != "none")
 						{
-							return true;
+							return other;
 						}
 					}
 				}
@@ -731,9 +719,17 @@ var Entity = (function()
 
 	Entity.prototype.collides = function(x, y)
 	{
-		return this.collidesWorld(x, y)
-			|| this.collidesTile(x, y)
-			|| this.collidesBorder(x, y);
+		var w = this.collidesWorld(x, y);
+		if (w)
+		{
+			return w;
+		}
+		var t = this.collidesTile(x, y);
+		if (t)
+		{
+			return t;
+		}
+		return false;
 	};
 
 	Entity.prototype.keepInScreen = function()
@@ -742,19 +738,24 @@ var Entity = (function()
 		if (this.x <= 0)
 		{
 			this.x = 0;
+			return true;
 		}
 		if (this.x >= levelWidth - this.width)
 		{
 			this.x = levelWidth - this.width;
+			return true;
 		}
 		if (this.y <= 0)
 		{
 			this.y = 0;
+			return true;
 		}
 		if (this.y >= levelHeight - this.height)
 		{
 			this.y = levelHeight - this.height;
+			return true;
 		}
+		return false;
 
 	}
 
@@ -876,7 +877,7 @@ function resetQuadrantSpeeds()
 		quadrantSpeeds.push([]);
 		for (var y=0; y<levelData[currentLevel][0]; ++y)
 		{
-			quadrantSpeeds[x].push(1);
+			quadrantSpeeds[x].push(0);
 		}
 	}
 }
