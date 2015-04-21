@@ -15,7 +15,7 @@ var lastTime = 0;
 var quadrantSpeeds = [];
 
 var levels;
-var level = 1;
+var level = 0;
 var levelWorlds = [];
 
 var tileWidth = 64;
@@ -81,46 +81,21 @@ function initializeWorld()
 			tiles : [
 				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"i - - - - - g - - - - g - - - - - i",
-				"- - - - - g - - g g - - g - - - - -",
-				"- - - - - - - g - - g - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - i - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -"
-			],
-			entities : new Object(),
-			splits : 2
-		},
-
-		{
-			tiles : [
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
 				"- - - - - - - i - - - - - - - - - -",
-				"- g - - - - - - - - - - - - - - - -",
-				"- - - - - - i - - - - - i - - - - -",
-				"- i - - - - i - - - - - i - - - - i",
+				"- g - t - - - - - - - - - - - - - -",
+				"- - - m - - i - - - - - i - - - - -",
+				"- i - b - - i - - - - - i - - - - i",
 				"- - - - - - - - - - - - - i - - - -",
 				"- - - - - - - - - - - - - - i - - -",
-				"- - i - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - i - - - - - - - - - - -",
-				"- - - - - - - - - i - - - - - - - -",
+				"- - i - - - - - - - - - - - - t - -",
+				"- - - - - - - - - l h r - - - m - -",
+				"- - - - - - - - - - - - - - - m - -",
+				"- - - - - - i - - - - - - - - m - -",
+				"- - - - - - - - - i - - - - - b - -",
 				"- - - - - - - i - - - - - - - - - -",
 				"- - i - - - - - i - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
-				"- - - - - - - - - - - - - - - - - -",
+				"- - - - - - i - - - - - - - - i - -",
+				"- - - l h h h r - - - - - - - - - -",
 				"- - - - - - - - - - - - - - - - - -"
 			],
 			entities : new Object(),
@@ -149,39 +124,7 @@ function initializeWorld()
 	}
 
 	// Level 1 tiles and moving tile placement
-
-	levels[0].background = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight);
-
-	var add = levels[0].entities;
-
-	add["g"] = new Entity("assets/themes/grass/grass.png");
-
-	add["b"] = new Entity("assets/themes/grass/wall/base.png");
-	add["m"] = new Entity("assets/themes/grass/wall/middle.png");
-	add["t"] = new Entity("assets/themes/grass/wall/top.png");
-
-	add["l"] = new Entity("assets/themes/grass/horizontal/left.png");
-	add["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
-	add["r"] = new Entity("assets/themes/grass/horizontal/right.png");
-
-	add["1"] = new Entity(undefined, 0, 13, 1, 1, "tile", "grass", 0.05);
-	add["1"].loadAnimation("assets/themes/grass/moving/", 5, 3);
-	add["2"] = new Entity(undefined, 9, 13, 1, 1, "tile", "grass", 0, 0.1);
-	add["2"].animation = add["1"].animation;
-	add["3"] = new Entity(undefined, 1, 8, 1, 1, "tile", "grass", 0.05);
-	add["3"].animation = add["1"].animation;
-	add["4"] = new Entity(undefined, 0, 9, 1, 1, "tile", "grass", 0.05);
-	add["4"].animation = add["1"].animation;
-	add["5"] = new Entity(undefined, 16, 8, 1, 1, "tile", "grass", 0.05);
-	add["5"].animation = add["1"].animation;
-	/*levels[level].entities["gm2"] = levels[level].entities["gm"];
-	levels[level].entities["gm2"].x = 15;
-	levels[level].entities["gm2"].y = 9;
-	levels[level].entities["gm2"].xVelocity = 0;
-	levels[level].entities["gm2"].yVelocity = 0.25;*/
 	//
-	// levelWorlds[0]["bear"] = new Entity(undefined, 4, 7, 1, 2);
-	// levelWorlds[0]["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
 
 	var player = new Entity(undefined, 1, 0, 0.8, 1.6, "player");
 	levels[level].entities["player"] = player;
@@ -192,30 +135,44 @@ function initializeWorld()
 	player.animations["left"] = player.animation;
 	player.loadAnimation("assets/player/whack/", 4, 5, undefined, false);
 	player.animations["whack"] = player.animation;
+	player.loadAnimation("assets/player/hangRight/", 1, 5, undefined, false);
+	player.animations["hangRight"] = player.animation;
+	player.loadAnimation("assets/player/hangLeft/", 1, 5, undefined, false);
+	player.animations["hangLeft"] = player.animation;
 	player.loadAnimation("assets/player/rest/", 3, 10, [0,1,2,1]);
 	player.animations["rest"] = player.animation;
 
-	levels[1].background = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight);
-	add = levels[1].entities;
+	levels[0].background = new Entity("assets/themes/grass/bg.png", 0, 0, levelWidth, levelHeight);
+	add = levels[0].entities;
+	add["bear"] = new Entity(undefined, 4, 7, 1, 2);
+	add["bear"].loadAnimation("assets/enemies/bear/", 3, 3);
 	add["g"] = new Entity("assets/themes/grass/grass.png");
+	add["l"] = new Entity("assets/themes/grass/horizontal/left.png");
+	add["h"] = new Entity("assets/themes/grass/horizontal/middle.png");
+	add["r"] = new Entity("assets/themes/grass/horizontal/right.png");
+	add["b"] = new Entity("assets/themes/grass/wall/base.png");
+	add["m"] = new Entity("assets/themes/grass/wall/middle.png");
+	add["t"] = new Entity("assets/themes/grass/wall/top.png");
 	add["1"] = new Entity(undefined, 4, 5, 1, 1, "tile", "grass", 0.05);
-	add["1"].animation = levels[0].entities["1"].animation;
+	add["1"].loadAnimation("assets/themes/grass/moving/", 5, 4);
+	add["e1"] = new Entity(undefined, 4, 4, 0.5167, 0.8, "enemy", "dragon");
+	add["e1"].loadAnimation("assets/enemies/dragon/rest/", 5, 4, [0,1,2,3,4,3,2,1]);
 	add["2"] = new Entity(undefined, 5, 11, 1, 1, "tile", "grass", 0.05);
 	add["2"].animation = add["1"].animation;
 	add["3"] = new Entity(undefined, 2, 10, 1, 1, "tile", "grass", 0, -0.1);
 	add["3"].animation = add["1"].animation;
 	add["4"] = new Entity(undefined, 7, 3, 1, 1, "tile", "grass", 0, 0.1);
 	add["4"].animation = add["1"].animation;
-	add["6"] = new Entity(undefined, 7, 15, 1, 1, "tile", "grass", 0.05);
+	add["6"] = new Entity(undefined, 8, 15, 1, 1, "tile", "grass", 0.05);
 	add["6"].animation = add["1"].animation;
 	add["7"] = new Entity(undefined, 14, 8, 1, 1, "tile", "grass", 0, 0.05);
 	add["7"].animation = add["1"].animation;
 	add["8"] = new Entity(undefined, 16, 5, 1, 1, "tile", "grass", -0.05);
 	add["8"].animation = add["1"].animation;
 	add["9"] = new Entity(undefined, 17, 6, 1, 1, "tile", "grass", -0.05);
-	add["9"].animation = add["1"].animation;
+	add["9"].loadAnimation("assets/themes/desert/tile/", 7, 4);
 	add["0"] = new Entity(undefined, 9, 4, 1, 1, "tile", "grass", 0.05);
-	add["0"].animation = add["1"].animation;
+	add["0"].animation = add["9"].animation;
 
 	resetQuadrantSpeeds();
 
@@ -311,8 +268,16 @@ function update(totalTime)
 			}
 			else if (hit)
 			{
-				alert(hit.x - oldX);
+				//alert(hit.x - oldX);
 			}
+
+		}
+
+		if (entity.name == "enemy")
+		{
+
+			entity.yVelocity += gravity * speedMod;
+			entity.handleCollisions(oldX, oldY);
 
 		}
 
@@ -348,8 +313,16 @@ function update(totalTime)
 			player.animation = player.animations["rest"];
 		}
 
+		var rub = player.collidesWorld();
 		if (key("E"))
 		{
+			if (rub)
+			{
+				if (rub.name == "enemy")
+				{
+					rub.image = null;
+				}
+			}
 			player.animation = player.animations["whack"];
 		}
 		else
@@ -360,6 +333,14 @@ function update(totalTime)
 		var jumpSpeed = -0.3;
 		if (hangLeft || hangRight)
 		{
+			if (hangLeft)
+			{
+				player.animation = player.animations["hangLeft"];
+			}
+			if (hangRight)
+			{
+				player.animation = player.animations["hangRight"];
+			}
 			player.yVelocity = 0.05;
 			if (key(" W") && !lastSpace)
 			{
@@ -460,18 +441,12 @@ function renderTile(x, y)
 		}
 		else if (tile.image)
 		{
-			if (tile.image.complete)
-			{
-				draw = tile.image
-			}
+			draw = tile.image;
 		}
 
 		if (draw)
 		{
-			if (draw.complete)
-			{
-				game.drawImage(draw, placeX, placeY, tileWidth, tileHeight);
-			}
+			game.drawImage(draw, placeX, placeY, tileWidth, tileHeight);
 		}
 
 	}
